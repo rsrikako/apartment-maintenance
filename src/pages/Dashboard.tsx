@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 
 interface Apartment {
   id: string;

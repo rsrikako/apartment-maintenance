@@ -10,7 +10,7 @@ interface UserDoc {
 
 const emptyUser: UserDoc = { phone: '', role: 'tenant' };
 
-const UserManagement: React.FC<{ role: string }> = ({ role }) => {
+const UserManagement: React.FC = () => {
   const { user } = useAuth();
   const [users, setUsers] = useState<UserDoc[]>([]);
   const [form, setForm] = useState<UserDoc>(emptyUser);
