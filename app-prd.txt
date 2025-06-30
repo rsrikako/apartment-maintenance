@@ -1,0 +1,183 @@
+# 📄 **Product Requirements Document (PRD)**
+
+## **Apartment Activity Management App**
+
+👉 *A modern, attractive PWA built with React + Firebase, styled with Tailwind CSS.*
+
+---
+
+## 🎯 **Objective**
+
+Build a React web app (PWA-ready) hosted on Firebase, using Firestore + Firebase Storage, to manage daily apartment activities:
+✅ Manage expenses and audits
+✅ Track owners, tenants, admins
+✅ Log and track tasks, complaints, activities
+✅ Send maintenance reminders via WhatsApp button links
+
+---
+
+## 🏗 **Tech Stack**
+
+| Layer     | Tool                                                           |
+| --------- | -------------------------------------------------------------- |
+| Frontend  | React + Tailwind CSS (modern UI, responsive)                   |
+| State     | React Context / Zustand (lightweight, simple)                  |
+| Backend   | Firebase Firestore (DB) + Firebase Storage (receipts/evidence) |
+| Hosting   | Firebase Hosting (PWA-ready)                                   |
+| Auth      | Firebase Authentication                                        |
+| Messaging | WhatsApp Web links via button click                            |
+
+---
+
+## ✨ **Features**
+
+---
+
+### 1️⃣ User Management
+
+* Roles: Admin / Owner / Tenant
+* Store contact info: name, flat no, phone, email
+* Ability to switch admin role
+
+👉 **Copilot Prompt**
+💬 *“Generate a React form component using Tailwind CSS to add or edit user details (name, flat number, phone, email, role dropdown), with validation, saving to Firestore.”*
+
+💬 *“Generate Firestore query code to update a user’s role (switch admin to another owner).”*
+
+---
+
+### 2️⃣ Expense Management + Audit
+
+* Record expenses: title, amount, category, date, uploaded receipt
+* Store receipts in Firebase Storage
+* List expenses by month, filter by category
+* Generate simple audit summary
+
+👉 **Copilot Prompt**
+💬 *“Generate React component with Tailwind CSS for adding an expense: title, amount, category select, date picker, file upload. On submit, upload file to Firebase Storage and save document in Firestore.”*
+
+💬 *“Generate Firestore query code to get all expenses for the current month grouped by category.”*
+
+---
+
+### 3️⃣ Maintenance Reminders
+
+* Button to generate and open WhatsApp link for each owner:
+  `https://wa.me/<phone>?text=Your%20monthly%20maintenance%20fee%20is%20due.%20Please%20pay%20at%20your%20earliest%20convenience.`
+
+👉 **Copilot Prompt**
+💬 *“Generate a React button component using Tailwind CSS that dynamically builds a WhatsApp link from user phone number and opens it in a new tab.”*
+
+---
+
+### 4️⃣ Activity Log
+
+* Record cleaning / repair activities (desc, date, optional image)
+* Store images in Firebase Storage
+
+👉 **Copilot Prompt**
+💬 *“Generate Tailwind CSS styled form in React to log apartment activities (description, date picker, optional image upload). Upload image to Firebase Storage and save log in Firestore.”*
+
+---
+
+### 5️⃣ Task / Action Item Tracking
+
+* Create, assign tasks (title, assigned to, due date, status)
+* Update status (pending, in-progress, done)
+
+👉 **Copilot Prompt**
+💬 *“Generate Tailwind CSS table + form in React for creating and listing tasks (title, assign to dropdown, due date, status select). Save to Firestore.”*
+
+---
+
+### 6️⃣ Complaint / Query Management
+
+* Allow users to submit complaints/queries
+* Track status (open, in-progress, resolved)
+* Add comments by admin
+
+👉 **Copilot Prompt**
+💬 *“Generate a React form using Tailwind CSS for raising complaints (title, description). Save to Firestore. Also generate code for admin to update status and add comments.”*
+
+---
+
+### 7️⃣ Dashboard + Reports
+
+* Show:
+
+  * Count of pending/completed tasks
+  * Complaint statuses
+  * Expenses summary (chart: category-wise)
+
+👉 **Copilot Prompt**
+💬 *“Generate Tailwind CSS styled dashboard component in React with Recharts bar chart for expense categories, counters for pending/completed tasks, complaint statuses.”*
+
+---
+
+## ✨ **Design Requirements**
+
+✅ Tailwind CSS for all components
+✅ Clean, minimal, and modern UI (use cards, soft shadows, rounded corners)
+✅ Responsive for mobile + desktop
+✅ Use gradient buttons, good whitespace, readable font sizes
+
+👉 **Copilot Prompt**
+💬 *“Apply Tailwind CSS classes to make this component look modern and professional: use rounded corners, shadow-lg, p-4, mb-4, bg-white, hover states, responsive grid or flex layout.”*
+
+---
+
+## 🗂 **Firestore Collections**
+
+```json
+users: {
+  uid, name, flatNo, phone, email, role
+}
+expenses: {
+  id, title, amount, category, date, createdBy, receiptUrl
+}
+activities: {
+  id, description, date, evidenceUrl
+}
+tasks: {
+  id, title, assignedTo, status, dueDate
+}
+complaints: {
+  id, title, description, raisedBy, status, comments[]
+}
+```
+
+👉 **Copilot Prompt**
+💬 *“Generate Firestore security rules to allow owners/tenants to read/write their data but only admin can manage users and change roles.”*
+
+---
+
+## 🚀 **Phases**
+
+| Phase | What you build                             |
+| ----- | ------------------------------------------ |
+| 1     | Auth, user management, expense CRUD        |
+| 2     | Tasks, complaints, activity log            |
+| 3     | Dashboard, WhatsApp buttons, audit summary |
+| 4     | PWA polishing, CI/CD, deployment           |
+
+---
+
+## 📝 **Deployment**
+
+👉 Firebase Hosting:
+💬 *“Generate Firebase Hosting config for deploying a React app as PWA with clean URLs.”*
+
+---
+
+## 💡 **Summary of Copilot Prompts**
+
+---
+
+✅ *"Generate Tailwind CSS form component for \[feature]"*
+✅ *"Generate Firestore query for \[filter/group]"*
+✅ *"Apply modern Tailwind styling with shadow, rounded-lg, bg-white, hover states"*
+✅ *"Generate file upload code to Firebase Storage + save URL to Firestore"*
+✅ *"Generate React dashboard with counters + Recharts bar chart with Tailwind styling"*
+✅ *"Generate Firestore security rules for role-based access control"*
+
+
