@@ -1,5 +1,7 @@
-import { db } from './firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app } from './firebase';
+
+const functions = getFunctions(app);
 
 export interface UserDoc {
   phone: string;
@@ -7,20 +9,16 @@ export interface UserDoc {
 }
 
 export async function getUserRoleByPhone(phone: string): Promise<UserDoc | null> {
-  console.log('[FIRESTORE] Looking up user with phone:', phone);
+  console.log('[CLOUD FUNCTION] Looking up user with phone:', phone);
   try {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('phone', '==', phone));
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const doc = snap.docs[0].data() as UserDoc;
-      console.log('[FIRESTORE] User found:', doc);
-      return doc;
+    const checkUserByPhone = httpsCallable(functions, 'checkUserByPhone');
+    const result = await checkUserByPhone({ phone });
+    if (result.data && (result.data as any).exists) {
+      return { phone, role: 'tenant' } as UserDoc;
     }
-    console.log('[FIRESTORE] No user found for phone:', phone);
     return null;
   } catch (err) {
-    console.error('[FIRESTORE] Error fetching user:', err);
+    console.error('[CLOUD FUNCTION] Error fetching user:', err);
     return null;
   }
 }

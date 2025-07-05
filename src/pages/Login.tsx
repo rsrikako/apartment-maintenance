@@ -46,6 +46,12 @@ const Login: React.FC = () => {
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+91' + formattedPhone.replace(/^0+/, '');
     }
+    console.log('Checking phone:', formattedPhone); // Debug: ensure phone is passed
+    if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
+      setError('Please enter a valid 10-digit mobile number.');
+      setLoading(false);
+      return;
+    }
     const userDoc = await getUserRoleByPhone(formattedPhone);
     if (!userDoc) {
       setError('You are not registered. Please contact admin at 8341334400.');

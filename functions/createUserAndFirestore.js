@@ -1,28 +1,12 @@
+// functions/index.js
+
 const { onCall } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
-exports.checkUserByPhone = onCall(async (request) => {
-  console.log('request.auth:', request.auth);
-  const phone = request.data.phone;
-  if (!phone) {
-    throw new functions.https.HttpsError(
-      'invalid-argument',
-      'Phone number is required.'
-    );
-  }
-  const snapshot = await admin
-    .firestore()
-    .collection('users')
-    .where('phone', '==', phone)
-    .limit(1)
-    .get();
-
-  return snapshot.empty
-    ? { exists: false }
-    : { exists: true, userId: snapshot.docs[0].id };
-});
-
+// Main callable function – v2 style
 exports.createUserAndFirestore = onCall(async (request) => {
   const auth = request.auth;
   console.log('request.auth →', auth);
@@ -78,29 +62,18 @@ exports.createUserAndFirestore = onCall(async (request) => {
     );
   }
 
-  let userRecord;
-  try {
-    // Try to get the user by phone number
-    userRecord = await admin.auth().getUserByPhoneNumber(phone);
-  } catch (error) {
-    if (error.code === 'auth/user-not-found') {
-      // User does not exist, so create a new one
-      userRecord = await admin.auth().createUser({
-        phoneNumber: phone,
-        displayName: name,
-      });
-    } else {
-      // Some other error occurred
-      throw error;
-    }
-  }
+  // Create new auth user
+  const userRecord = await admin.auth().createUser({
+    phoneNumber: phone,
+    displayName: name,
+  });
 
-  // Write Firestore user entry (merge if exists, create if not)
+  // Write Firestore user entry
   await admin
     .firestore()
     .collection('users')
     .doc(userRecord.uid)
-    .set({ phone, name, apartments }, { merge: true });
+    .set({ phone, name, apartments });
 
   return { uid: userRecord.uid };
 });

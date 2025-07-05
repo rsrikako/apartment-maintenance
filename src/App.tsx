@@ -8,6 +8,7 @@ import UserManagement from './pages/UserManagement';
 import DummyLogout from './pages/DummyLogout';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
+import Flats from './pages/Flats';
 
 function App() {
   const { user, loading } = useAuth();
@@ -66,6 +67,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/flats" element={<Flats />} />
         <Route path="/profile" element={
           loading || roleLoading ? (
             <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>
@@ -83,7 +85,7 @@ function App() {
           ) : roleError ? (
             <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">{roleError}</div>
           ) : role ? (
-            <UserManagement role={role} />
+            <UserManagement />
           ) : (
             <Login />
           )
