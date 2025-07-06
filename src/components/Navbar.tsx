@@ -3,10 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard' },
-  { to: '/apartments', label: 'Apartments' },
   { to: '/flats', label: 'Flats' },
+  { to: '/financials', label: 'Financials' },
   { to: '/profile', label: 'Profile' },
-  { to: '/user', label: 'User Management' },
 ];
 
 const Navbar: React.FC = () => {

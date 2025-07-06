@@ -4,11 +4,12 @@ import { Route, Routes, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
 import { getUserRoleByPhone } from './services/firestoreUsers';
-import UserManagement from './pages/UserManagement';
+// import UserManagement from './pages/UserManagement';
 import DummyLogout from './pages/DummyLogout';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import Flats from './pages/Flats';
+import Financials from './pages/Financials';
 
 function App() {
   const { user, loading } = useAuth();
@@ -61,13 +62,17 @@ function App() {
     return <DummyLogout />;
   }
 
+  // Hide Navbar on login page
+  const hideNavbar = window.location.pathname === '/';
+
   return (
     <>
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/flats" element={<Flats />} />
+        <Route path="/financials" element={<Financials />} />
         <Route path="/profile" element={
           loading || roleLoading ? (
             <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>
@@ -75,17 +80,6 @@ function App() {
             <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">{roleError}</div>
           ) : role ? (
             <Profile role={role} />
-          ) : (
-            <Login />
-          )
-        } />
-        <Route path="/user" element={
-          loading || roleLoading ? (
-            <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>
-          ) : roleError ? (
-            <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">{roleError}</div>
-          ) : role ? (
-            <UserManagement />
           ) : (
             <Login />
           )
