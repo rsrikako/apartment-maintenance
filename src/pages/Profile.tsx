@@ -149,7 +149,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-200 px-2">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-4 flex flex-col items-center">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-4 flex flex-col items-center pb-24">
         <h2 className="text-xl font-bold text-blue-700 mb-2 text-center">Profile</h2>
         <div className="mb-4 w-full">
           <div className="text-base font-semibold text-center">Mobile: {user?.phoneNumber}</div>

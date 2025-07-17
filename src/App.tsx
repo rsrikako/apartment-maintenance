@@ -10,6 +10,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
 import Flats from './pages/Flats';
 import Financials from './pages/Financials';
+import ApartmentActivities from './pages/Activities';
 
 function App() {
   const { user, loading } = useAuth();
@@ -73,6 +74,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/flats" element={<Flats />} />
         <Route path="/financials" element={<Financials />} />
+        <Route path="/activities" element={<ApartmentActivities />} />
         <Route path="/profile" element={
           loading || roleLoading ? (
             <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>

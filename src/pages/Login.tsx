@@ -77,7 +77,7 @@ const Login: React.FC = () => {
     try {
       if (confirmation) {
         await confirmation.confirm(otp);
-        navigate('/profile'); // Redirect to profile on success
+        navigate('/dashboard'); // Redirect to profile on success
       }
     } catch {
       setError('Invalid OTP. Please try again.');
@@ -88,7 +88,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-white to-blue-200 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 md:p-10 flex flex-col items-center">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 md:p-10 flex flex-col items-center pb-24">
         <div className="w-16 h-16 mb-4 rounded-full bg-blue-100 flex items-center justify-center shadow-lg">
           <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.657-1.343-3-3-3s-3 1.343-3 3 1.343 3 3 3 3-1.343 3-3zm0 0c0-1.657 1.343-3 3-3s3 1.343 3 3-1.343 3-3 3-3-1.343-3-3zm0 0v2m0 4h.01" /></svg>
         </div>
