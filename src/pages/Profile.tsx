@@ -34,6 +34,26 @@ const Profile: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
+  // write a logic to fetch the user from Firestore and check if the user available if not create a user
+  React.useEffect(() => {
+    if (!user) return;
+
+    const fetchUser = async () => {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        // Create a new user document if it doesn't exist
+        await setDoc(doc(db, 'users', user.uid), {
+          phoneNumber: user.phoneNumber,
+          apartments: [],
+          defaultApartment: null,
+          name: user.displayName || '',
+        });
+      }
+    };
+
+    fetchUser();
+  }, [user]);
+
   const handleLogout = async () => {
     await signOut(auth);
     window.location.href = '/';

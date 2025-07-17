@@ -26,7 +26,6 @@ function App() {
       if (user && user.phoneNumber) {
         setRoleLoading(true);
         setRoleError(null);
-        console.log('[APP] Looking up Firestore user for phone:', user.phoneNumber);
         // Add a timeout for Firestore lookup
         let didTimeout = false;
         const timeoutId = setTimeout(() => {
@@ -37,15 +36,11 @@ function App() {
         getUserRoleByPhone(user.phoneNumber).then(userDoc => {
           clearTimeout(timeoutId);
           if (didTimeout) return;
-          console.log('[APP] Firestore userDoc:', userDoc);
           setRole(userDoc?.role || null);
           setRoleLoading(false);
           // Only redirect to /profile if currently at root
-          if (userDoc?.role && window.location.pathname === '/') {
+          if (user && window.location.pathname === '/') {
             navigate('/profile');
-          }
-          else if (!userDoc?.role) {
-            setRoleError(`No user found in Firestore for phone: ${user.phoneNumber}`);
           }
         }).catch(() => {
           clearTimeout(timeoutId);
@@ -76,11 +71,9 @@ function App() {
         <Route path="/financials" element={<Financials />} />
         <Route path="/activities" element={<ApartmentActivities />} />
         <Route path="/profile" element={
-          loading || roleLoading ? (
+          loading ? (
             <div className="flex items-center justify-center min-h-screen text-lg">Loading...</div>
-          ) : roleError ? (
-            <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">{roleError}</div>
-          ) : role ? (
+          ) : user ? (
             <Profile />
           ) : (
             <Login />
