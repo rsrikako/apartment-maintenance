@@ -43,10 +43,10 @@ const Profile: React.FC = () => {
       if (!userDoc.exists()) {
         // Create a new user document if it doesn't exist
         await setDoc(doc(db, 'users', user.uid), {
-          phoneNumber: user.phoneNumber,
+          phone: user.phoneNumber,
           apartments: [],
           defaultApartment: null,
-          name: user.displayName || '',
+          name: prompt("Please enter your name:") || '',
         });
       }
     };
