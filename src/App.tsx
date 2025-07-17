@@ -1,10 +1,8 @@
 import { useAuth } from './context/AuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
-import { getUserRoleByPhone } from './services/firestoreUsers';
-// import UserManagement from './pages/UserManagement';
 import DummyLogout from './pages/DummyLogout';
 import Navbar from './components/Navbar';
 import Dashboard from './pages/Dashboard';
@@ -15,41 +13,16 @@ import ApartmentActivities from './pages/Activities';
 function App() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [role, setRole] = useState<string | null>(null);
-  const [roleLoading, setRoleLoading] = useState(false);
-  const [roleError, setRoleError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('[APP] Auth user:', user);
-    console.log('[APP] Auth loading:', loading);
     if (!loading) {
       if (user && user.phoneNumber) {
-        setRoleLoading(true);
-        setRoleError(null);
-        // Add a timeout for Firestore lookup
-        let didTimeout = false;
-        const timeoutId = setTimeout(() => {
-          didTimeout = true;
-          setRoleLoading(false);
-          setRoleError('Timed out while fetching user role from Firestore. Please try again or contact admin.');
-        }, 7000); // 7 seconds
-        getUserRoleByPhone(user.phoneNumber).then(userDoc => {
-          clearTimeout(timeoutId);
-          if (didTimeout) return;
-          setRole(userDoc?.role || null);
-          setRoleLoading(false);
           // Only redirect to /profile if currently at root
-          if (user && window.location.pathname === '/') {
-            navigate('/profile');
-          }
-        }).catch(() => {
-          clearTimeout(timeoutId);
-          if (didTimeout) return;
-          setRoleLoading(false);
-          setRoleError('Error fetching user role from Firestore.');
-        });
+        if (user && window.location.pathname === '/') {
+          navigate('/profile');
+        }
       } else {
-        setRole(null);
+        navigate('/');
       }
     }
   }, [user, loading, navigate]);
