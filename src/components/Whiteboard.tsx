@@ -9,14 +9,14 @@ const WHITEBOARD_DOC_ID = 'whiteboard';
 const Whiteboard: React.FC = () => {
   const { selectedApartment, loading: apartmentLoading } = useApartment();
   const { user } = useAuth();
-  const [note, setNote] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [note, setNote] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [saving, setSaving] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!selectedApartment || typeof selectedApartment !== 'string' || !selectedApartment.trim() || !user) {
+    if (!selectedApartment || !user) {
       setError('No apartment selected or user not logged in.');
       setLoading(false);
       return;
@@ -51,7 +51,7 @@ const Whiteboard: React.FC = () => {
   }, [selectedApartment, user]);
 
   const handleSave = async () => {
-    if (!selectedApartment || typeof selectedApartment !== 'string' || !selectedApartment.trim()) return;
+    if (!selectedApartment || !user) return;
     setSaving(true);
     setError('');
     try {
@@ -64,12 +64,8 @@ const Whiteboard: React.FC = () => {
     }
   };
 
-  if (typeof selectedApartment === 'undefined' || typeof user === 'undefined' || loading || apartmentLoading) {
+  if (!selectedApartment || !user || loading || apartmentLoading) {
     return <div className="text-center py-8 text-gray-500">Loading whiteboard...</div>;
-  }
-
-  if (!selectedApartment || !user) {
-    return <div className="text-center py-8 text-red-500">No apartment selected or user not logged in.</div>;
   }
 
   return (

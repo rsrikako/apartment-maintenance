@@ -58,11 +58,15 @@ const Notice: React.FC = () => {
   }, [selectedApartment, user]);
 
   // Add Notice
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     if (!addTitle.trim() || !addDetails.trim()) {
       setError('Title and details are required.');
+      return;
+    }
+    if (!selectedApartment || !user) {
+      setError('Apartment or user not found.');
       return;
     }
     try {
@@ -87,11 +91,15 @@ const Notice: React.FC = () => {
   };
 
   // Edit Notice
-  const handleEdit = async (e: React.FormEvent) => {
+  const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     if (!editTitle.trim() || !editDetails.trim() || !editId) {
       setError('Title and details are required.');
+      return;
+    }
+    if (!selectedApartment) {
+      setError('Apartment not found.');
       return;
     }
     try {
@@ -117,6 +125,10 @@ const Notice: React.FC = () => {
   // Delete Notice
   const handleDelete = async (id: string) => {
     setError('');
+    if (!selectedApartment) {
+      setError('Apartment not found.');
+      return;
+    }
     try {
       const noticeRef = doc(db, 'apartments', selectedApartment, 'notices', id);
       await deleteDoc(noticeRef);

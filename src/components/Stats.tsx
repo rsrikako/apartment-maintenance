@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Bar, Pie, Doughnut } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import { Chart, ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
 import { db } from '../services/firebase';
 import { useApartment } from '../context/ApartmentContext';
-import { useAuth } from '../context/AuthContext';
 
 Chart.register(ArcElement, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
 
@@ -13,28 +12,31 @@ function getCurrentMonthYYYYMM() {
   return `${now.getFullYear()}-${month}`;
 }
 
+interface ChartData {
+  labels: string[];
+  datasets: { label?: string; data: number[]; backgroundColor: string[] }[];
+}
+
 const Stats: React.FC = () => {
   const { selectedApartment } = useApartment();
-  const { user } = useAuth();
   const [month, setMonth] = useState<string>(getCurrentMonthYYYYMM());
-  const [expensesData, setExpensesData] = useState<any>(null);
+  const [expensesData, setExpensesData] = useState<ChartData | null>(null);
   const [maintenanceData, setMaintenanceData] = useState<any>(null);
   const [activitiesData, setActivitiesData] = useState<any>(null);
   const [totalFlats, setTotalFlats] = useState<number | null>(null);
-  const [flatsPieData, setFlatsPieData] = useState<any>(null)
-  const [activitiesPieData, setActivitiesPieData] = useState<any>(null);
+  const [flatsPieData, setFlatsPieData] = useState<ChartData | null>(null);
+  const [activitiesPieData, setActivitiesPieData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!selectedApartment || !month) return;
     setLoading(true);
     (async () => {
-      const { collection, query, where, getDocs, Timestamp, doc, getDoc } = await import('firebase/firestore');
+      const { collection, query, where, getDocs, Timestamp } = await import('firebase/firestore');
       // Fetch total flats from apartment document
       const flatsColRef = collection(db, 'apartments', selectedApartment, 'flats');
       const flatsSnap = await getDocs(flatsColRef);
-      const totalFlats = flatsSnap.size; // or flatsSnap.docs.length
-      setTotalFlats(totalFlats);
+      setTotalFlats(flatsSnap.size);
 
       // Fetch expenses for the month
       const start = new Date(`${month}-01T00:00:00`);
@@ -89,7 +91,7 @@ const Stats: React.FC = () => {
         const occs = occSnap.docs.map(d => d.data());
         if (occs.length === 0) {
           notCompleted += 1;
-        } else if (occs.every(o => o.status === 'completed' || o.status === 'skipped')) {
+        } else if (occs.every((o: any) => o.status === 'completed' || o.status === 'skipped')) {
           completed += 1;
         } else {
           notCompleted += 1;
@@ -108,7 +110,6 @@ const Stats: React.FC = () => {
   }, [selectedApartment, month]);
 
   useEffect(() => {
-    console.log('maintenanceData:', maintenanceData, 'totalFlats:', totalFlats);
     if (maintenanceData && totalFlats !== null) {
       const paid = maintenanceData.flatsPaid?.length || 0;
       const unpaid = Math.max(totalFlats - paid, 0);
@@ -125,8 +126,6 @@ const Stats: React.FC = () => {
   }, [maintenanceData, totalFlats]);
 
   if (loading) return <div className="text-center py-8 text-gray-500">Loading stats...</div>;
-
-
 
   return (
     <div className="max-w-3xl mx-auto p-4">

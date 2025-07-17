@@ -14,27 +14,41 @@ import {
 } from 'firebase/firestore';
 import { db } from "../services/firebase";
 import { useEffect, useState } from 'react';
-import { format, eachWeekOfInterval, startOfMonth, endOfMonth, addDays } from 'date-fns';
+import { eachWeekOfInterval, endOfMonth } from 'date-fns';
+
+interface Occurrence {
+  id: string;
+  expectedDate: any;
+  status: string;
+  skipReason?: string;
+}
+
+interface Activity {
+  id: string;
+  name: string;
+  frequency: string;
+  occurrences: Occurrence[];
+}
 
 export default function ApartmentActivities() {
   const { selectedApartment } = useApartment();
   const { user } = useAuth();
-  const [activities, setActivities] = useState([]);
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [newActivity, setNewActivity] = useState({ name: '', frequency: 'daily' });
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [month, setMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [newActivity, setNewActivity] = useState<{ name: string; frequency: string }>({ name: '', frequency: 'daily' });
 
-  const getMonthRange = (monthStr) => {
+  function getMonthRange(monthStr: string): [Date, Date] {
     const [y, m] = monthStr.split("-").map(Number);
     const start = new Date(y, m - 1, 1);
     const end = new Date(y, m, 0, 23, 59, 59);
     return [start, end];
-  };
+  }
 
-  const getOccurrences = (frequency) => {
+  function getOccurrences(frequency: string): { expectedDate: any; status: string }[] {
     const start = new Date(`${month}-01`);
     const end = endOfMonth(start);
-    let occurrences = [];
+    let occurrences: Date[] = [];
 
     if (frequency === 'daily') {
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -52,95 +66,95 @@ export default function ApartmentActivities() {
       expectedDate: Timestamp.fromDate(new Date(date)),
       status: 'pending'
     }));
-  };
-
-  
-
-
-const fetchActivities = async () => {
-  if (!selectedApartment || !user) return;
-
-  const aptRef = doc(db, 'apartments', selectedApartment);
-  const aptSnap = await getDoc(aptRef);
-  const admins = aptSnap.data()?.admins || [];
-  setIsAdmin(admins.includes(user.uid));
-
-  const activitiesRef = collection(db, 'apartments', selectedApartment, 'activities');
-  const activitiesQuery = query(activitiesRef);
-  const activitySnapshot = await getDocs(activitiesQuery);
-
-  const [start, end] = getMonthRange(month);
-
-  const activitiesData = await Promise.all(
-    activitySnapshot.docs.map(async (docSnap) => {
-      const activity = { id: docSnap.id, ...docSnap.data() };
-      const occRef = collection(db, 'apartments', selectedApartment, 'activities', docSnap.id, 'occurrences');
-
-      const occQuery = query(occRef,
-        where('expectedDate', '>=', Timestamp.fromDate(start)),
-        where('expectedDate', '<=', Timestamp.fromDate(end))
-      );
-
-      let occSnap = await getDocs(occQuery);
-
-      if (occSnap.empty) {
-        const newOcc = generateOccurrencesForMonth(activity.frequency, month);
-        await Promise.all(
-          newOcc.map(date =>
-            addDoc(occRef, {
-              expectedDate: Timestamp.fromDate(new Date(date)),
-              status: 'pending'
-            })
-          )
-        );
-        occSnap = await getDocs(occQuery); // refetch newly created ones
-      }
-
-      activity.occurrences = occSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      return activity;
-    })
-  );
-
-  setActivities(activitiesData);
-};
-
-const generateOccurrencesForMonth = (frequency, monthStr) => {
-  const [year, month] = monthStr.split("-").map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const dates = [];
-
-  if (frequency === "daily") {
-    for (let d = 1; d <= daysInMonth; d++) {
-      dates.push(`${year}-${pad(month)}-${pad(d)}`);
-    }
-  } else if (frequency === "weekly") {
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(year, month - 1, d);
-      if (date.getDay() === 1) dates.push(formatDate(date)); // Mondays
-    }
-  } else if (frequency === "monthly") {
-    dates.push(`${year}-${pad(month)}-01`);
-  } else if (frequency === "quarterly") {
-    if ([1, 4, 7, 10].includes(month)) {
-      dates.push(`${year}-${pad(month)}-01`);
-    }
   }
 
-  return dates;
-};
+  async function fetchActivities() {
+    if (!selectedApartment || !user) return;
 
-const pad = (n) => n.toString().padStart(2, "0");
-const formatDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const aptRef = doc(db, 'apartments', selectedApartment);
+    const aptSnap = await getDoc(aptRef);
+    const admins = aptSnap.data()?.admins || [];
+    setIsAdmin(admins.includes(user.uid));
 
+    const activitiesRef = collection(db, 'apartments', selectedApartment, 'activities');
+    const activitiesQuery = query(activitiesRef);
+    const activitySnapshot = await getDocs(activitiesQuery);
 
-    useEffect(() => {
-    if (selectedApartment && user) {
-        fetchActivities();
+    const [start, end] = getMonthRange(month);
+
+    const activitiesData: Activity[] = await Promise.all(
+      activitySnapshot.docs.map(async (docSnap) => {
+        const activity = { id: docSnap.id, ...docSnap.data() } as Activity;
+        const occRef = collection(db, 'apartments', selectedApartment, 'activities', docSnap.id, 'occurrences');
+
+        const occQuery = query(occRef,
+          where('expectedDate', '>=', Timestamp.fromDate(start)),
+          where('expectedDate', '<=', Timestamp.fromDate(end))
+        );
+
+        let occSnap = await getDocs(occQuery);
+
+        if (occSnap.empty) {
+          const newOcc = generateOccurrencesForMonth(activity.frequency, month);
+          await Promise.all(
+            newOcc.map(date =>
+              addDoc(occRef, {
+                expectedDate: Timestamp.fromDate(new Date(date)),
+                status: 'pending'
+              })
+            )
+          );
+          occSnap = await getDocs(occQuery); // refetch newly created ones
+        }
+
+        activity.occurrences = occSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Occurrence[];
+        return activity;
+      })
+    );
+
+    setActivities(activitiesData);
+  }
+
+  function generateOccurrencesForMonth(frequency: string, monthStr: string): string[] {
+    const [year, month] = monthStr.split("-").map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dates: string[] = [];
+
+    if (frequency === "daily") {
+      for (let d = 1; d <= daysInMonth; d++) {
+        dates.push(`${year}-${pad(month)}-${pad(d)}`);
+      }
+    } else if (frequency === "weekly") {
+      for (let d = 1; d <= daysInMonth; d++) {
+        const date = new Date(year, month - 1, d);
+        if (date.getDay() === 1) dates.push(formatDate(date)); // Mondays
+      }
+    } else if (frequency === "monthly") {
+      dates.push(`${year}-${pad(month)}-01`);
+    } else if (frequency === "quarterly") {
+      if ([1, 4, 7, 10].includes(month)) {
+        dates.push(`${year}-${pad(month)}-01`);
+      }
     }
-    }, [selectedApartment, user, month]);
+
+    return dates;
+  }
+
+  function pad(n: number): string {
+    return n.toString().padStart(2, "0");
+  }
+  function formatDate(d: Date): string {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  useEffect(() => {
+    if (selectedApartment && user) {
+      fetchActivities();
+    }
+  }, [selectedApartment, user, month]);
 
   const handleAdd = async () => {
-    if (!newActivity.name) return;
+    if (!newActivity.name || !selectedApartment || !user) return;
     const occurrences = getOccurrences(newActivity.frequency);
 
     await addDoc(collection(db, 'apartments', selectedApartment, 'activities'), {
@@ -153,13 +167,15 @@ const formatDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.g
     fetchActivities();
   };
 
-  const updateOccurrence = async (activityId, occurrenceId, update) => {
+  const updateOccurrence = async (activityId: string, occurrenceId: string, update: any) => {
+    if (!selectedApartment) return;
     const occRef = doc(db, 'apartments', selectedApartment, 'activities', activityId, 'occurrences', occurrenceId);
     await updateDoc(occRef, update);
     fetchActivities();
   };
 
-  const deleteActivity = async (id) => {
+  const deleteActivity = async (id: string) => {
+    if (!selectedApartment) return;
     await deleteDoc(doc(db, 'apartments', selectedApartment, 'activities', id));
     fetchActivities();
   };

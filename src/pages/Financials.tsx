@@ -14,6 +14,11 @@ import {
   getDocs,
   Timestamp,
   orderBy,
+  doc,
+  getDoc,
+  deleteDoc,
+  updateDoc,
+  setDoc,
 } from "firebase/firestore";
 import { useApartment } from "../context/ApartmentContext";
 import { useAuth } from "../context/AuthContext";
@@ -21,9 +26,9 @@ import { useAuth } from "../context/AuthContext";
 const CATEGORIES = [
   { value: "maintenance", label: "Maintenance", type: "income" },
   { value: "salary", label: "Salary", type: "expense" },
-  { value: "utilities", label: "Utilities", type: "expense"  },
-  { value: "misc", label: "Miscellaneous", type: "expense"  },
-  { value: "income", label: "Income", type: "income"  },
+  { value: "utilities", label: "Utilities", type: "expense" },
+  { value: "misc", label: "Miscellaneous", type: "expense" },
+  { value: "income", label: "Income", type: "income" },
 ];
 
 function getMonthRange(date = new Date()) {
@@ -40,21 +45,44 @@ function getMonthRange(date = new Date()) {
   return { start, end };
 }
 
+interface Flat {
+  id: string;
+  flatNumber: string;
+}
+
+interface AuditTxn {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  date: any;
+  createdBy?: string;
+  receiptUrl?: string;
+  createdAt?: any;
+  balance: number;
+}
+
 const Financials: React.FC = () => {
   const { selectedApartment } = useApartment();
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [form, setForm] = useState({
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [form, setForm] = useState<{
+    title: string;
+    amount: string;
+    category: string;
+    date: string;
+    file: File | null;
+  }>({
     title: "",
     amount: "",
     category: "",
     date: "",
-    file: null as File | null,
+    file: null,
   });
   const [showModal, setShowModal] = useState(false);
   // Maintenance modal state
   const [showMaintModal, setShowMaintModal] = useState(false);
-  const [flats, setFlats] = useState<{ id: string; flatNumber: string }[]>([]);
+  const [flats, setFlats] = useState<Flat[]>([]);
   const [selectedFlats, setSelectedFlats] = useState<string[]>([]);
   const [maintMonth, setMaintMonth] = useState(() => {
     const d = new Date();
@@ -71,26 +99,23 @@ const Financials: React.FC = () => {
   const [maintRefresh, setMaintRefresh] = useState(0);
 
   useEffect(() => {
-    // Debug log
-    // eslint-disable-next-line no-console
-    console.log('useEffect for flats: showMaintModal', showMaintModal, 'selectedApartment', selectedApartment, 'maintRefresh', maintRefresh);
     if (!selectedApartment || !showMaintModal) return;
     setMaintLoading(true);
-    import('firebase/firestore').then(async ({ collection, getDocs, doc, getDoc }) => {
+    (async () => {
       // Fetch all flats
       const flatsSnap = await getDocs(collection(db, 'apartments', selectedApartment, 'flats'));
-      setFlats(flatsSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setFlats(flatsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Flat)));
       // Fetch flatsPaid for the selected month
       const maintDoc = await getDoc(doc(db, 'apartments', selectedApartment, 'maintenancePayments', maintMonth));
-      const paid = maintDoc.exists() && Array.isArray(maintDoc.data().flatsPaid) ? maintDoc.data().flatsPaid : [];
+      const paid = maintDoc.exists() && Array.isArray(maintDoc.data()?.flatsPaid) ? maintDoc.data()?.flatsPaid : [];
       setFlatsPaid(paid);
       setMaintLoading(false);
-    });
+    })();
   }, [selectedApartment, showMaintModal, maintMonth, maintRefresh]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [audit, setAudit] = useState<any[]>([]);
+  const [audit, setAudit] = useState<AuditTxn[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
   const [dateRange, setDateRange] = useState(() => {
     const { start, end } = getMonthRange();
@@ -106,13 +131,11 @@ const Financials: React.FC = () => {
   // Check admin
   useEffect(() => {
     if (!selectedApartment || !user) return;
-    // Fetch apartment doc to check admin
-    import("firebase/firestore").then(({ doc, getDoc }) => {
-      getDoc(doc(db, "apartments", selectedApartment)).then((snap) => {
-        const data = snap.data();
-        setIsAdmin(!!(data && data.admins && data.admins.includes(user.uid)));
-      });
-    });
+    (async () => {
+      const aptSnap = await getDoc(doc(db, "apartments", selectedApartment));
+      const data = aptSnap.data();
+      setIsAdmin(!!(data && data.admins && data.admins.includes(user.uid)));
+    })();
   }, [selectedApartment, user]);
 
   // Fetch audit trail for date range
@@ -120,7 +143,6 @@ const Financials: React.FC = () => {
     if (!selectedApartment) return;
     setLoadingAudit(true);
     (async () => {
-      const { Timestamp } = await import("firebase/firestore");
       const fromTS = Timestamp.fromDate(new Date(dateRange.from));
       const toTS = Timestamp.fromDate(
         new Date(dateRange.to + "T23:59:59.999Z")
@@ -150,10 +172,10 @@ const Financials: React.FC = () => {
       const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       // Compute running balance
       let balance = opening;
-      const auditTrail = txns.map((txn) => {
+      const auditTrail: AuditTxn[] = txns.map((txn: any) => {
         const amt = Number(txn.amount) * (isIncomeCategory(txn.category) ? 1 : -1);
         balance += amt;
-        return { ...txn, balance };
+        return { ...txn, balance } as AuditTxn;
       });
       setAudit(auditTrail);
       setClosingBalance(balance);
@@ -161,7 +183,7 @@ const Financials: React.FC = () => {
   }, [selectedApartment, dateRange]);
 
   // Handle form submit
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -191,7 +213,7 @@ const Financials: React.FC = () => {
           amount: Number(form.amount),
           category: form.category,
           date: new Date(form.date),
-          createdBy: user.uid,
+          createdBy: user?.uid,
           receiptUrl,
           createdAt: Timestamp.now(),
         }
@@ -209,17 +231,15 @@ const Financials: React.FC = () => {
   };
 
   // Delete transaction
-  const [txnToDelete, setTxnToDelete] = useState<any>(null);
+  const [txnToDelete, setTxnToDelete] = useState<AuditTxn | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const handleDeleteTransaction = async (txn: any) => {
+  const handleDeleteTransaction = async (txn: AuditTxn) => {
     if (!selectedApartment) return;
     setDeleting(true);
     try {
       // Delete from expenses
-      await (await import('firebase/firestore')).deleteDoc(
-        (await import('firebase/firestore')).doc(db, 'apartments', selectedApartment, 'expenses', txn.id)
-      );
+      await deleteDoc(doc(db, 'apartments', selectedApartment, 'expenses', txn.id));
       // If maintenance, update maintenancePayments
       if (txn.category === 'maintenance') {
         // Try to extract month and flat number from title
@@ -229,19 +249,19 @@ const Financials: React.FC = () => {
           const maintMonth = match[1];
           const flatNumber = match[2];
           // Find the flatId for this flatNumber
-          const flatsSnap = await (await import('firebase/firestore')).getDocs(
-            (await import('firebase/firestore')).collection(db, 'apartments', selectedApartment, 'flats')
+          const flatsSnap = await getDocs(
+            collection(db, 'apartments', selectedApartment, 'flats')
           );
           const flatDoc = flatsSnap.docs.find(f => f.data().flatNumber == flatNumber);
           if (flatDoc) {
             const flatId = flatDoc.id;
             // Remove flatId from flatsPaid
-            const maintDocRef = (await import('firebase/firestore')).doc(db, 'apartments', selectedApartment, 'maintenancePayments', maintMonth);
-            const maintDocSnap = await (await import('firebase/firestore')).getDoc(maintDocRef);
+            const maintDocRef = doc(db, 'apartments', selectedApartment, 'maintenancePayments', maintMonth);
+            const maintDocSnap = await getDoc(maintDocRef);
             if (maintDocSnap.exists()) {
               const data = maintDocSnap.data();
               const updatedFlatsPaid = (data.flatsPaid || []).filter((id: string) => id !== flatId);
-              await (await import('firebase/firestore')).updateDoc(maintDocRef, { flatsPaid: updatedFlatsPaid });
+              await updateDoc(maintDocRef, { flatsPaid: updatedFlatsPaid });
             }
           }
         }
@@ -283,14 +303,9 @@ const Financials: React.FC = () => {
           </button>
           <button
             onClick={() => {
-              // Debug log
-              // eslint-disable-next-line no-console
-              console.log('Maintenance button clicked, showMaintModal before:', showMaintModal);
               setShowMaintModal(true);
               setMaintSuccess('');
               setMaintError('');
-              // eslint-disable-next-line no-console
-              setTimeout(() => console.log('showMaintModal after:', showMaintModal), 0);
             }}
             className="bg-gradient-to-r from-green-500 to-green-400 text-white px-6 py-3 rounded-full shadow-lg font-semibold text-base hover:from-green-600 hover:to-green-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 flex items-center gap-2"
           >
@@ -671,9 +686,8 @@ const Financials: React.FC = () => {
                 if (selectedFlats.length === 0) return setMaintError('Select at least one flat');
                 setMaintLoading(true);
                 try {
-                  const { addDoc, collection, setDoc, doc, Timestamp } = await import('firebase/firestore');
                   // Add a transaction for each selected flat
-                await Promise.all(selectedFlats.map(flatId => {
+                  await Promise.all(selectedFlats.map(flatId => {
                     const flat = flats.find(f => f.id === flatId);
                     return addDoc(collection(db, 'apartments', selectedApartment, 'expenses'), {
                         title: `Maintenance for ${maintMonth} by Flat #${flat ? flat.flatNumber : flatId}`,
@@ -683,7 +697,7 @@ const Financials: React.FC = () => {
                         createdBy: user?.uid,
                         createdAt: Timestamp.now(),
                     });
-                }));
+                  }));
                   // Store maintenance payment record for the month (append, deduplicate)
                   const allPaid = Array.from(new Set([...flatsPaid, ...selectedFlats]));
                   await setDoc(doc(db, 'apartments', selectedApartment, 'maintenancePayments', maintMonth), {
@@ -738,7 +752,7 @@ const Financials: React.FC = () => {
                 disabled={deleting}
               >Cancel</button>
               <button
-                onClick={() => handleDeleteTransaction(txnToDelete)}
+                onClick={() => handleDeleteTransaction(txnToDelete!)}
                 className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                 disabled={deleting}
               >{deleting ? 'Deleting...' : 'Delete'}</button>
