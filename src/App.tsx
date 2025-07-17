@@ -81,7 +81,7 @@ function App() {
           ) : roleError ? (
             <div className="flex items-center justify-center min-h-screen text-red-500 text-lg">{roleError}</div>
           ) : role ? (
-            <Profile role={role} />
+            <Profile />
           ) : (
             <Login />
           )
