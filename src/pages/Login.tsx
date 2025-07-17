@@ -21,50 +21,75 @@ const Login: React.FC = () => {
   const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
   const navigate = useNavigate();
 
-  // Initialize reCAPTCHA only once on mount
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'normal', // Show the widget
-      });
-      window.recaptchaVerifier.render();
+  if (typeof window !== 'undefined' && !window.recaptchaVerifier) {
+    const container = document.getElementById('recaptcha-container');
+
+    if (!container) {
+      console.error('reCAPTCHA container not found in DOM.');
+      setError('reCAPTCHA failed to load.');
+      return;
     }
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = undefined;
-      }
-    };
-  }, []);
+
+    try {
+      const verifier = new RecaptchaVerifier(auth, container, {
+        size: 'invisible',
+      });
+
+      window.recaptchaVerifier = verifier;
+
+      verifier.render().then(widgetId => {
+        console.log('reCAPTCHA widgetId:', widgetId);
+      }).catch(err => {
+        console.error('reCAPTCHA failed to render:', err);
+        setError('reCAPTCHA failed to render. Disable ad blockers and try again.');
+      });
+    } catch (err) {
+      console.error('Error initializing reCAPTCHA:', err);
+      setError('Failed to initialize reCAPTCHA.');
+    }
+  }
+
+  return () => {
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = undefined;
+    }
+  };
+}, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    // Check if the number is allowed in Firestore
+
     let formattedPhone = phone.trim();
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+91' + formattedPhone.replace(/^0+/, '');
     }
-    console.log('Checking phone:', formattedPhone); // Debug: ensure phone is passed
+
     if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
       setError('Please enter a valid 10-digit mobile number.');
       setLoading(false);
       return;
     }
-    const userDoc = await getUserRoleByPhone(formattedPhone);
-    if (!userDoc) {
-      setError('You are not registered. Please contact admin at 8341334400.');
-      setLoading(false);
-      return;
-    }
+
     try {
       const appVerifier = window.recaptchaVerifier;
+      if (!appVerifier) {
+        throw new Error('Recaptcha verifier is not initialized.');
+      }
+
       const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
       setConfirmation(result);
       setStep('otp');
-    } catch {
-      setError('Failed to send OTP. Please check the phone number.');
+    } catch (err: any) {
+      console.error(err);
+      if (err.message?.includes('Recaptcha')) {
+        setError('reCAPTCHA is not ready. Please refresh and try again.');
+      } else {
+        setError('Failed to send OTP. Please check the phone number.');
+      }
     } finally {
       setLoading(false);
     }
@@ -74,12 +99,31 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
     try {
       if (confirmation) {
         await confirmation.confirm(otp);
-        navigate('/dashboard'); // Redirect to profile on success
+
+        let formattedPhone = phone.trim();
+        if (!formattedPhone.startsWith('+')) {
+          formattedPhone = '+91' + formattedPhone.replace(/^0+/, '');
+        }
+
+        if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
+          setError('Please enter a valid 10-digit mobile number.');
+          setLoading(false);
+          return;
+        }
+
+        const userDoc = await getUserRoleByPhone(formattedPhone);
+        if (!userDoc) {
+          navigate('/profile');
+        } else {
+          navigate('/dashboard');
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError('Invalid OTP. Please try again.');
     } finally {
       setLoading(false);
@@ -92,6 +136,7 @@ const Login: React.FC = () => {
         <div className="w-16 h-16 mb-4 rounded-full bg-blue-100 flex items-center justify-center shadow-lg">
           <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.657-1.343-3-3-3s-3 1.343-3 3 1.343 3 3 3 3-1.343 3-3zm0 0c0-1.657 1.343-3 3-3s3 1.343 3 3-1.343 3-3 3-3-1.343-3-3zm0 0v2m0 4h.01" /></svg>
         </div>
+        
         <h2 className="text-3xl font-extrabold text-blue-700 mb-2 text-center">Welcome Back</h2>
         <p className="text-gray-500 mb-6 text-center">Sign in with your mobile number</p>
         {step === 'phone' ? (
@@ -108,7 +153,7 @@ const Login: React.FC = () => {
                 maxLength={10}
               />
             </div>
-            <div id="recaptcha-container" />
+            
             {error && <div className="text-red-500 text-sm text-center">{error}</div>}
             <button
               type="submit"

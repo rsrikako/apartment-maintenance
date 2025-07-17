@@ -153,6 +153,11 @@ const Profile: React.FC = () => {
         <h2 className="text-xl font-bold text-blue-700 mb-2 text-center">Profile</h2>
         <div className="mb-4 w-full">
           <div className="text-base font-semibold text-center">Mobile: {user?.phoneNumber}</div>
+          {(!apartments.length || !selectedApartment) && (
+            <div className="mt-4 text-center text-red-600 font-semibold">
+              Please select or create an apartment to use the app.
+            </div>
+          )}
           <div className="mt-4 flex flex-col gap-2 items-center">
             <label className="block text-sm font-medium mb-1 text-center">Select Apartment</label>
             <div className="flex w-full gap-2 items-center">
