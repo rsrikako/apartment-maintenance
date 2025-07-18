@@ -144,9 +144,7 @@ exports.sendApartmentPushNotification = onCall(async (request) => {
       notification: {
         title,
         body: message,
-        click_action: clickUrl,
-        icon: 'https://apartment-maintenance-81c7c.web.app/icon-192x192.png', 
-        image: 'https://apartment-maintenance-81c7c.web.app/icon-512x512.png',
+        click_action: clickUrl || '',
       },
       data: {
         clickUrl: clickUrl || '',
