@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { sendPushNotification } from '../services/sendPushNotification';
-import AppIcon from './AppIcon';
 import { db } from '../services/firebase';
 import { useApartment } from '../context/ApartmentContext';
 import { useAuth } from '../context/AuthContext';
