@@ -145,8 +145,8 @@ exports.sendApartmentPushNotification = onCall(async (request) => {
         title,
         body: message,
         click_action: clickUrl,
-        icon: 'https://your-domain.com/icon-192x192.png', // <-- Update to your deployed logo URL
-        image: 'https://your-domain.com/icon-512x512.png', // Optional: large image
+        icon: 'https://apartment-maintenance-81c7c.web.app/icon-192x192.png', 
+        image: 'https://apartment-maintenance-81c7c.web.app/icon-512x512.png',
       },
       data: {
         clickUrl: clickUrl || '',
