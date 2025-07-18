@@ -60,7 +60,7 @@ function App() {
               onClick={async () => {
                 if (deferredPrompt) {
                   deferredPrompt.prompt();
-                  const choiceResult = await deferredPrompt.userChoice;
+                  await deferredPrompt.userChoice;
                   setShowA2HS(false);
                   setDeferredPrompt(null);
                 }
