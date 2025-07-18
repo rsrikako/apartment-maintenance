@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import Flats from './pages/Flats';
 import Financials from './pages/Financials';
 import ApartmentActivities from './pages/Activities';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   const { user, loading } = useAuth();
@@ -17,12 +18,10 @@ function App() {
   useEffect(() => {
     if (!loading) {
       if (user && user.phoneNumber) {
-          // Only redirect to /profile if currently at root
-        if (user && window.location.pathname === '/') {
+        // Only redirect to /profile if currently at root
+        if (window.location.pathname === '/' || window.location.pathname === '/login') {
           navigate('/profile');
         }
-      } else {
-        navigate('/');
       }
     }
   }, [user, loading, navigate]);
@@ -31,14 +30,15 @@ function App() {
     return <DummyLogout />;
   }
 
-  // Hide Navbar on login page
-  const hideNavbar = window.location.pathname === '/';
+  // Hide Navbar on landing page
+  const hideNavbar = window.location.pathname === '/' || window.location.pathname === '/login';
 
   return (
     <>
       {!hideNavbar && <Navbar />}
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/flats" element={<Flats />} />
         <Route path="/financials" element={<Financials />} />

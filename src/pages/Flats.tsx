@@ -557,12 +557,12 @@ const Flats: React.FC = () => {
     );
 
   return (
-    <div className="p-4 max-w-4xl mx-auto pb-24">
+    <div className="p-4 max-w-4xl mx-auto pb-24 min-h-screen">
       <div className="content-center justify-between">
         <div className="flex gap-2 m-auto">
           {isAdmin && (
             <button
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-400 text-white rounded-full shadow-lg flex items-center gap-2 text-base font-semibold hover:from-blue-600 hover:to-blue-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="px-6 py-3 bg-emerald-600 text-white rounded-full shadow-lg flex items-center gap-2 text-base font-semibold hover:bg-emerald-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
               onClick={() => setShowAdd((v) => !v)}
             >
               <svg
@@ -582,7 +582,7 @@ const Flats: React.FC = () => {
             </button>
           )}
           <button
-            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-400 text-white rounded-full shadow-lg flex items-center gap-2 text-base font-semibold hover:from-green-600 hover:to-green-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300"
+            className="px-6 py-3 bg-slate-500 text-white rounded-full shadow-lg flex items-center gap-2 text-base font-semibold hover:bg-slate-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-300"
             onClick={() => setShowAdminModal(true)}
           >
             <svg
@@ -605,10 +605,10 @@ const Flats: React.FC = () => {
       {showAdd && isAdmin && (
         <form
           onSubmit={handleAddFlat}
-          className="mb-4 flex flex-col gap-2 bg-blue-50 p-4 rounded"
+          className="mb-4 flex flex-col gap-2 bg-white bg-opacity-80 p-4 rounded-2xl shadow"
         >
           <input
-            className="border p-2 rounded"
+            className="border border-slate-200 p-2 rounded focus:ring-2 focus:ring-emerald-200"
             placeholder="Flat Number"
             value={form.flatNumber}
             onChange={(e) =>
@@ -617,7 +617,7 @@ const Flats: React.FC = () => {
             required
           />
           <input
-            className="border p-2 rounded"
+            className="border border-slate-200 p-2 rounded focus:ring-2 focus:ring-emerald-200"
             placeholder="Owner Name"
             value={form.ownerName}
             onChange={(e) =>
@@ -625,17 +625,22 @@ const Flats: React.FC = () => {
             }
             required
           />
-          <input
-            className="border p-2 rounded"
-            placeholder="Owner Contact"
-            value={form.ownerContact}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, ownerContact: e.target.value }))
-            }
-            required
-          />
+          <div className="flex items-center">
+            <span className="px-2 py-2 bg-gray-100 border border-slate-200 rounded-l">+91</span>
+            <input
+              className="border border-slate-200 p-2 rounded-r focus:ring-2 focus:ring-emerald-200 flex-1"
+              placeholder="Owner Contact"
+              value={form.ownerContact.replace(/^\+91/, '')}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, ownerContact: '+91' + e.target.value.replace(/^\+91/, '') }))
+              }
+              required
+              maxLength={10}
+              pattern="[0-9]{10}"
+            />
+          </div>
           <select
-            className="border p-2 rounded"
+            className="border border-slate-200 p-2 rounded focus:ring-2 focus:ring-emerald-200"
             value={form.status}
             onChange={(e) =>
               setForm((f) => ({
@@ -650,7 +655,7 @@ const Flats: React.FC = () => {
           {form.status === "rented" && (
             <>
               <input
-                className="border p-2 rounded"
+                className="border border-slate-200 p-2 rounded focus:ring-2 focus:ring-emerald-200"
                 placeholder="Tenant Name"
                 value={form.tenantName}
                 onChange={(e) =>
@@ -658,15 +663,20 @@ const Flats: React.FC = () => {
                 }
                 required
               />
-              <input
-                className="border p-2 rounded"
-                placeholder="Tenant Contact"
-                value={form.tenantContact}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, tenantContact: e.target.value }))
-                }
-                required
-              />
+              <div className="flex items-center">
+                <span className="px-2 py-2 bg-gray-100 border border-slate-200 rounded-l">+91</span>
+                <input
+                  className="border border-slate-200 p-2 rounded-r focus:ring-2 focus:ring-emerald-200 flex-1"
+                  placeholder="Tenant Contact"
+                  value={form.tenantContact.replace(/^\+91/, '')}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, tenantContact: '+91' + e.target.value.replace(/^\+91/, '') }))
+                  }
+                  required
+                  maxLength={10}
+                  pattern="[0-9]{10}"
+                />
+              </div>
               {/* Tenant admin checkbox */}
               <label className="flex items-center gap-2 mt-2">
                 <input
@@ -674,7 +684,7 @@ const Flats: React.FC = () => {
                   checked={addTenantAdmin}
                   onChange={(e) => setAddTenantAdmin(e.target.checked)}
                 />
-                <span className="text-sm font-medium text-blue-800">
+                <span className="text-sm font-medium text-emerald-700">
                   Make Tenant Admin
                 </span>
               </label>
@@ -687,13 +697,13 @@ const Flats: React.FC = () => {
               checked={addAdmin}
               onChange={(e) => setAddAdmin(e.target.checked)}
             />
-            <span className="text-sm font-medium text-blue-800">
+            <span className="text-sm font-medium text-emerald-700">
               Make Owner Admin
             </span>
           </label>
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded"
+            className="bg-emerald-600 text-white px-4 py-2 rounded shadow hover:bg-emerald-700"
           >
             Add
           </button>
@@ -735,50 +745,49 @@ const Flats: React.FC = () => {
                   </div>
                 </div>
                 {/* Edit/Delete icons top right, visible on hover */}
-                {isAdmin && (
+                {isAdmin && user && flat.ownerUid !== undefined && flat.tenantUid !== undefined &&
+                  !(flat.ownerUid === user.uid || flat.tenantUid === user.uid) && (
                   <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    {isAdmin && (
-                      <>
-                        <button
-                          className="p-1 bg-yellow-100 hover:bg-yellow-200 rounded-full"
-                          title="Edit"
-                          onClick={() => handleEditFlat(flat)}
+                    <>
+                      <button
+                        className="p-1 bg-yellow-100 hover:bg-yellow-200 rounded-full"
+                        title="Edit"
+                        onClick={() => handleEditFlat(flat)}
+                      >
+                        <svg
+                          className="w-5 h-5 text-yellow-700"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
                         >
-                          <svg
-                            className="w-5 h-5 text-yellow-700"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M15.232 5.232l3.536 3.536M9 13l6-6M3 17.25V21h3.75l11.06-11.06a2.121 2.121 0 00-3-3L3 17.25z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          className="p-1 bg-red-100 hover:bg-red-200 rounded-full"
-                          title="Delete"
-                          onClick={() => openDeleteModal(flat.id)}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15.232 5.232l3.536 3.536M9 13l6-6M3 17.25V21h3.75l11.06-11.06a2.121 2.121 0 00-3-3L3 17.25z"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        className="p-1 bg-red-100 hover:bg-red-200 rounded-full"
+                        title="Delete"
+                        onClick={() => openDeleteModal(flat.id)}
+                      >
+                        <svg
+                          className="w-5 h-5 text-red-700"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
                         >
-                          <svg
-                            className="w-5 h-5 text-red-700"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 011-1h4a1 1 0 011 1m-7 0h8"
-                            />
-                          </svg>
-                        </button>
-                      </>
-                    )}
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 011-1h4a1 1 0 011 1m-7 0h8"
+                          />
+                        </svg>
+                      </button>
+                    </>
                   </div>
                 )}
               </div>
@@ -1017,18 +1026,23 @@ const Flats: React.FC = () => {
                       }
                       required
                     />
-                    <input
-                      className="border p-2 rounded"
-                      placeholder="Owner Contact"
-                      value={editForm.ownerContact}
-                      onChange={(e) =>
-                        setEditForm((f) => ({
-                          ...f,
-                          ownerContact: e.target.value,
-                        }))
-                      }
-                      required
-                    />
+                    <div className="flex items-center">
+                      <span className="px-2 py-2 bg-gray-100 border rounded-l">+91</span>
+                      <input
+                        className="border p-2 rounded-r flex-1"
+                        placeholder="Owner Contact"
+                        value={editForm.ownerContact.replace(/^\+91/, '')}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            ownerContact: '+91' + e.target.value.replace(/^\+91/, '')
+                          }))
+                        }
+                        required
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                      />
+                    </div>
                     <input
                       className="border p-2 rounded"
                       placeholder="Flat Number"
@@ -1068,18 +1082,23 @@ const Flats: React.FC = () => {
                           }
                           required
                         />
-                        <input
-                          className="border p-2 rounded"
-                          placeholder="Tenant Contact"
-                          value={editForm.tenantContact}
-                          onChange={(e) =>
-                            setEditForm((f) => ({
-                              ...f,
-                              tenantContact: e.target.value,
-                            }))
-                          }
-                          required
-                        />
+                        <div className="flex items-center">
+                          <span className="px-2 py-2 bg-gray-100 border rounded-l">+91</span>
+                          <input
+                            className="border p-2 rounded-r flex-1"
+                            placeholder="Tenant Contact"
+                            value={editForm.tenantContact.replace(/^\+91/, '')}
+                            onChange={(e) =>
+                              setEditForm((f) => ({
+                                ...f,
+                                tenantContact: '+91' + e.target.value.replace(/^\+91/, '')
+                              }))
+                            }
+                            required
+                            maxLength={10}
+                            pattern="[0-9]{10}"
+                          />
+                        </div>
                         {/* Tenant admin checkbox */}
                         <label className="flex items-center gap-2 mt-2">
                           <input

@@ -48,6 +48,9 @@ function getMonthRange(date = new Date()) {
 interface Flat {
   id: string;
   flatNumber: string;
+  status?: 'self' | 'rented';
+  ownerUid?: string;
+  tenantUid?: string;
 }
 
 interface AuditTxn {
@@ -55,10 +58,10 @@ interface AuditTxn {
   title: string;
   amount: number;
   category: string;
-  date: any;
+  date: Date | { toDate: () => Date };
   createdBy?: string;
   receiptUrl?: string;
-  createdAt?: any;
+  createdAt?: Date | { toDate: () => Date };
   balance: number;
 }
 
@@ -173,10 +176,10 @@ const Financials: React.FC = () => {
       // Compute running balance
       let balance = opening;
       const auditTrail: AuditTxn[] = txns.map((txn: any) => {
-        const amt = Number(txn.amount) * (isIncomeCategory(txn.category) ? 1 : -1);
-        balance += amt;
-        return { ...txn, balance } as AuditTxn;
-      });
+      const amt = Number(txn.amount) * (isIncomeCategory(txn.category) ? 1 : -1);
+      balance += amt;
+      return { ...txn, balance } as AuditTxn;
+    });
       setAudit(auditTrail);
       setClosingBalance(balance);
     })().finally(() => setLoadingAudit(false));
@@ -223,8 +226,8 @@ const Financials: React.FC = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
       // Refresh audit
       setDateRange((r) => ({ ...r }));
-    } catch (e: any) {
-      setError(e.message || "Failed to add transaction");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add transaction");
     } finally {
       setSubmitting(false);
     }
@@ -547,9 +550,11 @@ const Financials: React.FC = () => {
               >
                 <div className="flex justify-between items-center mb-2">
                   <div className="text-sm text-gray-500">
-                    {txn.date && txn.date.toDate
+                    {txn.date && typeof txn.date === 'object' && 'toDate' in txn.date
                       ? txn.date.toDate().toLocaleDateString()
-                      : new Date(txn.date).toLocaleDateString()}
+                      : txn.date instanceof Date
+                        ? txn.date.toLocaleDateString()
+                        : ''}
                   </div>
                   <div
                     className={`font-semibold ${
@@ -711,13 +716,66 @@ const Financials: React.FC = () => {
                   setMaintAmount('');
                   setMaintRefresh(r => r + 1);
                   setDateRange(r => ({ ...r }));
-                } catch (e) {
+                } catch {
                   setMaintError('Failed to record maintenance payments');
                 }
                 setMaintLoading(false);
               }}
             >
               Save
+            </button>
+            <button
+              className="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700"
+              disabled={maintLoading}
+              onClick={async () => {
+                setMaintError('');
+                setMaintSuccess('');
+                if (!selectedApartment) return setMaintError('No apartment selected');
+                if (!maintMonth) return setMaintError('Please select a month');
+                setMaintLoading(true);
+                try {
+                  // Fetch flats that have NOT paid for the selected month
+                  const unpaidFlats = flats.filter(flat => !flatsPaid.includes(flat.id));
+                  if (unpaidFlats.length === 0) {
+                    setMaintError('All flats have paid for this month.');
+                    setMaintLoading(false);
+                    return;
+                  }
+                  // Get userIds for these flats
+                  const userIds: string[] = [];
+                  for (const flat of unpaidFlats) {
+                    // If rented, send to both owner and tenant
+                    if (flat.status === 'rented') {
+                      if (flat.ownerUid) userIds.push(flat.ownerUid);
+                      if (flat.tenantUid) userIds.push(flat.tenantUid);
+                    } else if (flat.status === 'self') {
+                      if (flat.ownerUid) userIds.push(flat.ownerUid);
+                    }
+                  }
+                  // Deduplicate userIds
+                  const uniqueUserIds = Array.from(new Set(userIds));
+                  if (uniqueUserIds.length === 0) {
+                    setMaintError('No users found for unpaid flats.');
+                    setMaintLoading(false);
+                    return;
+                  }
+                  // Send push notification
+                  // Import sendPushNotification dynamically to avoid circular deps
+                  const { sendPushNotification } = await import('../services/sendPushNotification');
+                  await sendPushNotification({
+                    userIds: uniqueUserIds,
+                    title: `Maintenance Due for ${maintMonth}`,
+                    message: `Please pay your maintenance for ${maintMonth}. Amount: ₹${maintAmount}`,
+                    clickUrl: '/financials',
+                  });
+                  setMaintSuccess('Notification sent to unpaid users!');
+                } catch {
+                  setMaintError('Failed to send notifications');
+                }
+                setMaintLoading(false);
+              }}
+            >
+              Notify Users Who Need to Pay
             </button>
             <button
               className="bg-gray-300 text-gray-800 px-6 py-2 rounded font-semibold hover:bg-gray-400"

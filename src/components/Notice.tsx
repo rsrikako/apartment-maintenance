@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { sendPushNotification } from '../services/sendPushNotification';
+import AppIcon from './AppIcon';
 import { db } from '../services/firebase';
 import { useApartment } from '../context/ApartmentContext';
 import { useAuth } from '../context/AuthContext';
@@ -85,6 +87,13 @@ const Notice: React.FC = () => {
       const q = query(noticesRef, orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Notice)));
+      // Send push notification to all apartment users
+      await sendPushNotification({
+        apartmentId: selectedApartment,
+        title: `New Notice: ${addTitle}`,
+        message: addDetails,
+        clickUrl: '/dashboard',
+      });
     } catch (e) {
       setError('Failed to add notice.');
     }
@@ -117,6 +126,13 @@ const Notice: React.FC = () => {
       const q = query(noticesRef, orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Notice)));
+      // Send push notification to all apartment users
+      await sendPushNotification({
+        apartmentId: selectedApartment,
+        title: `Updated Notice: ${editTitle}`,
+        message: editDetails,
+        clickUrl: '/dashboard',
+      });
     } catch (e) {
       setError('Failed to update notice.');
     }
@@ -147,7 +163,9 @@ const Notice: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 pb-24">
-      <h2 className="text-2xl font-bold mb-4 text-blue-700">Notices</h2>
+      <div className="flex flex-col items-center mb-2">
+        <h2 className="text-2xl font-bold mb-4 text-blue-700">Notifications</h2>
+      </div>
       {isAdmin && (
         <div className="mb-6">
           {!showAdd ? (
@@ -155,7 +173,7 @@ const Notice: React.FC = () => {
               className="bg-blue-600 text-white px-4 py-2 rounded font-semibold shadow hover:bg-blue-700"
               onClick={() => setShowAdd(true)}
             >
-              + Add Notice
+              + Add Notification
             </button>
           ) : (
             <form onSubmit={handleAdd} className="bg-blue-50 p-4 rounded shadow flex flex-col gap-2 mt-2">

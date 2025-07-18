@@ -104,3 +104,83 @@ exports.createUserAndFirestore = onCall(async (request) => {
 
   return { uid: userRecord.uid };
 });
+
+exports.sendApartmentPushNotification = onCall(async (request) => {
+  try {
+    const { apartmentId, userIds, title, message, clickUrl } = request.data;
+    if (!title || !message || (!apartmentId && !userIds)) {
+      throw new Error('Missing required fields');
+    }
+
+    // Get user IDs: either from userIds or all users in apartment
+    let targetUserIds = userIds;
+    if (!targetUserIds && apartmentId) {
+      // Query users with this apartmentId
+      const usersSnap = await admin.firestore().collection('users')
+        .where('apartments', 'array-contains', apartmentId).get();
+      targetUserIds = usersSnap.docs.map(doc => doc.id);
+    }
+
+    let tokensToSend = [];
+    let userTokenMap = {}; // For token cleanup
+
+    // Fetch FCM tokens for each user, only if notificationsEnabled == true
+    for (const uid of targetUserIds) {
+      const userDoc = await admin.firestore().collection('users').doc(uid).get();
+      const userData = userDoc.data();
+      if (userData?.notificationsEnabled) {
+        const fcmTokens = userData.fcmTokens || [];
+        tokensToSend.push(...fcmTokens);
+        userTokenMap[uid] = fcmTokens;
+      }
+    }
+
+    if (tokensToSend.length === 0) {
+      return { result: 'No tokens to send' };
+    }
+
+    // Prepare notification payload
+    const payload = {
+      notification: {
+        title,
+        body: message,
+        click_action: clickUrl,
+        icon: 'https://your-domain.com/icon-192x192.png', // <-- Update to your deployed logo URL
+        image: 'https://your-domain.com/icon-512x512.png', // Optional: large image
+      },
+      data: {
+        clickUrl: clickUrl || '',
+      }
+    };
+
+    // Send notifications
+    const response = await admin.messaging().sendToDevice(tokensToSend, payload);
+
+    // Remove invalid tokens
+    const tokensToRemove = [];
+    response.results.forEach((result, idx) => {
+      const error = result.error;
+      if (error) {
+        // Token is invalid, remove from Firestore
+        tokensToRemove.push(tokensToSend[idx]);
+      }
+    });
+
+    // Remove invalid tokens from users
+    for (const uid of targetUserIds) {
+      const tokens = userTokenMap[uid];
+      const invalidTokens = tokens.filter(t => tokensToRemove.includes(t));
+      if (invalidTokens.length > 0) {
+        await admin.firestore().collection('users').doc(uid).update({
+          fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens)
+        });
+      }
+    }
+
+    return { result: 'Notifications sent' };
+  } catch (err) {
+    console.error('Error sending notifications:', err);
+    throw new Error('Internal error');
+  }
+});
+ 

@@ -16,6 +16,13 @@ import { db } from "../services/firebase";
 import { useEffect, useState } from 'react';
 import { eachWeekOfInterval, endOfMonth } from 'date-fns';
 
+interface PendingAction {
+  type: 'delete' | 'done' | 'skip' | null;
+  activityId?: string;
+  occurrenceId?: string;
+  skipReason?: string;
+}
+
 interface Occurrence {
   id: string;
   expectedDate: any;
@@ -37,6 +44,8 @@ export default function ApartmentActivities() {
   const [month, setMonth] = useState<string>(new Date().toISOString().slice(0, 7));
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [newActivity, setNewActivity] = useState<{ name: string; frequency: string }>({ name: '', frequency: 'daily' });
+  const [pendingAction, setPendingAction] = useState<PendingAction>({ type: null });
+  const [skipInput, setSkipInput] = useState<string>("");
 
   function getMonthRange(monthStr: string): [Date, Date] {
     const [y, m] = monthStr.split("-").map(Number);
@@ -180,33 +189,51 @@ export default function ApartmentActivities() {
     fetchActivities();
   };
 
+  // Modal action handlers
+  const handleConfirmAction = async () => {
+    if (pendingAction.type === 'delete' && pendingAction.activityId) {
+      await deleteActivity(pendingAction.activityId);
+    } else if (pendingAction.type === 'done' && pendingAction.activityId && pendingAction.occurrenceId) {
+      await updateOccurrence(pendingAction.activityId, pendingAction.occurrenceId, { status: 'completed', completionDate: Timestamp.now() });
+    } else if (pendingAction.type === 'skip' && pendingAction.activityId && pendingAction.occurrenceId) {
+      await updateOccurrence(pendingAction.activityId, pendingAction.occurrenceId, { status: 'skipped', skipReason: skipInput });
+      setSkipInput("");
+    }
+    setPendingAction({ type: null });
+  };
+
+  const handleCancelAction = () => {
+    setPendingAction({ type: null });
+    setSkipInput("");
+  };
+
   return (
-    <div className="p-6 max-w-4xl mx-auto pb-24">
-      <h1 className="text-2xl font-bold mb-4">Apartment Activities</h1>
+    <div className="p-6 max-w-4xl mx-auto pb-24 min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-emerald-700">Apartment Activities</h1>
 
       <div className="flex justify-between items-center mb-6">
         <input
           type="month"
           value={month}
           onChange={(e) => setMonth(e.target.value)}
-          className="border p-2 rounded"
+          className="border border-slate-200 p-2 rounded focus:ring-2 focus:ring-emerald-200 bg-white"
         />
       </div>
 
       {isAdmin && (
-        <div className="bg-gray-100 p-4 rounded mb-6">
-          <h2 className="font-semibold mb-2">Add Activity</h2>
+        <div className="bg-white bg-opacity-80 p-4 rounded-2xl shadow mb-6">
+          <h2 className="font-semibold mb-2 text-slate-700">Add Activity</h2>
           <input
             type="text"
             value={newActivity.name}
             onChange={(e) => setNewActivity({ ...newActivity, name: e.target.value })}
             placeholder="Activity name"
-            className="border p-2 mr-2 rounded"
+            className="border border-slate-200 p-2 mr-2 rounded focus:ring-2 focus:ring-emerald-200 bg-white"
           />
           <select
             value={newActivity.frequency}
             onChange={(e) => setNewActivity({ ...newActivity, frequency: e.target.value })}
-            className="border p-2 mr-2 rounded"
+            className="border border-slate-200 p-2 mr-2 rounded focus:ring-2 focus:ring-emerald-200 bg-white"
           >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -215,7 +242,7 @@ export default function ApartmentActivities() {
           </select>
           <button
             onClick={handleAdd}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-emerald-600 text-white px-4 py-2 rounded shadow hover:bg-emerald-700"
           >
             Add
           </button>
@@ -224,33 +251,30 @@ export default function ApartmentActivities() {
 
       <div className="space-y-6">
         {activities.map((act) => (
-          <div key={act.id} className="border p-4 rounded shadow-sm bg-white">
-            <h3 className="font-bold text-lg mb-2">{act.name} ({act.frequency})</h3>
+          <div key={act.id} className="bg-white bg-opacity-90 border border-slate-200 p-6 rounded-2xl shadow-lg">
+            <h3 className="font-bold text-lg mb-2 text-emerald-700">{act.name} ({act.frequency})</h3>
             <ul className="space-y-2">
               {act.occurrences?.map((occ, idx) => (
-                <li key={occ.id || idx} className="flex justify-between items-center border-b pb-1">
+                <li key={occ.id || idx} className="flex justify-between items-center border-b border-slate-100 pb-1">
                   <div>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-slate-600">
                       {occ.expectedDate.toDate().toLocaleDateString()} - Status: {occ.status}
                     </span>
                     {occ.status === 'skipped' && occ.skipReason && (
-                      <span className="text-red-600 ml-2 text-sm">Reason: {occ.skipReason}</span>
+                      <span className="text-orange-500 ml-2 text-sm">Reason: {occ.skipReason}</span>
                     )}
                   </div>
                   {isAdmin && occ.status === 'pending' && (
                     <div className="space-x-2">
                       <button
-                        onClick={() => updateOccurrence(act.id, occ.id, { status: 'completed', completionDate: Timestamp.now() })}
-                        className="px-2 py-1 bg-green-600 text-white rounded"
+                        onClick={() => setPendingAction({ type: 'done', activityId: act.id, occurrenceId: occ.id })}
+                        className="px-3 py-1 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700"
                       >
                         Mark Done
                       </button>
                       <button
-                        onClick={() => {
-                          const reason = prompt('Enter reason for skipping:');
-                          if (reason) updateOccurrence(act.id, occ.id, { status: 'skipped', skipReason: reason });
-                        }}
-                        className="px-2 py-1 bg-yellow-500 text-white rounded"
+                        onClick={() => setPendingAction({ type: 'skip', activityId: act.id, occurrenceId: occ.id })}
+                        className="px-3 py-1 bg-yellow-400 text-white rounded shadow hover:bg-yellow-500"
                       >
                         Skip
                       </button>
@@ -262,8 +286,8 @@ export default function ApartmentActivities() {
             {isAdmin && (
               <div className="mt-4 text-right">
                 <button
-                  onClick={() => deleteActivity(act.id)}
-                  className="px-3 py-1 bg-red-600 text-white rounded"
+                  onClick={() => setPendingAction({ type: 'delete', activityId: act.id })}
+                  className="px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700"
                 >
                   Delete Activity
                 </button>
@@ -272,6 +296,48 @@ export default function ApartmentActivities() {
           </div>
         ))}
       </div>
+    {/* Warning Modal */}
+      {pendingAction.type && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-80 flex flex-col items-center">
+            <div className="text-lg font-semibold mb-2 text-red-700">
+              {pendingAction.type === 'delete' && 'Delete Activity?'}
+              {pendingAction.type === 'done' && 'Mark as Done?'}
+              {pendingAction.type === 'skip' && 'Skip Activity?'}
+            </div>
+            <div className="text-slate-700 mb-4 text-center">
+              {pendingAction.type === 'delete' && 'Are you sure you want to delete this activity? This action cannot be undone.'}
+              {pendingAction.type === 'done' && 'Are you sure you want to mark this occurrence as done?'}
+              {pendingAction.type === 'skip' && (
+                <>
+                  <div>Are you sure you want to skip this occurrence?</div>
+                  <input
+                    className="border border-slate-200 p-2 rounded mt-2 w-full focus:ring-2 focus:ring-emerald-200 bg-white"
+                    placeholder="Enter reason for skipping"
+                    value={skipInput}
+                    onChange={e => setSkipInput(e.target.value)}
+                  />
+                </>
+              )}
+            </div>
+            <div className="flex gap-4 mt-2">
+              <button
+                onClick={handleConfirmAction}
+                className="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700"
+                disabled={pendingAction.type === 'skip' && !skipInput}
+              >
+                Confirm
+              </button>
+              <button
+                onClick={handleCancelAction}
+                className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
