@@ -39,11 +39,6 @@ const Profile: React.FC = () => {
     }
   }, [user, notificationsEnabled, setShowSuggestModal]);
   // Register service worker for FCM notifications
-  React.useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    }
-  }, []);
   const { apartments, selectedApartment, setSelectedApartment, refreshApartments } = useApartment();
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
