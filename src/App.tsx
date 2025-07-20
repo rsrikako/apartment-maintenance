@@ -40,6 +40,8 @@ function App() {
       // If logged in and on a public route, redirect to /profile
       if (publicRoutes.includes(currentPath)) {
         navigate('/dashboard');
+      } else {
+        navigate('/login', { replace: true });
       }
     }
   }, [user, loading, navigate]);
