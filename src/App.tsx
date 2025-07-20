@@ -28,12 +28,18 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      if (user && user.phoneNumber) {
-        // Only redirect to /profile if currently at root
-        if (window.location.pathname === '/' || window.location.pathname === '/login') {
-          navigate('/profile');
-        }
+    if (loading) return;
+    const publicRoutes = ['/', '/login'];
+    const currentPath = window.location.pathname;
+    if (!user || !user.phoneNumber) {
+      // If not logged in and not on a public route, redirect to /login
+      if (!publicRoutes.includes(currentPath)) {
+        navigate('/login', { replace: true });
+      }
+    } else {
+      // If logged in and on a public route, redirect to /profile
+      if (publicRoutes.includes(currentPath)) {
+        navigate('/dashboard');
       }
     }
   }, [user, loading, navigate]);
