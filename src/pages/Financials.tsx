@@ -237,7 +237,9 @@ const Financials: React.FC = () => {
         orderBy("date", "asc")
       );
       const snap = await getDocs(q);
-      const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() as { [key: string]: any } }));
+      const txns = snap.docs.map(
+        (d) => ({ id: d.id, ...d.data() } as Omit<AuditTxn, 'balance'>)
+      );
       // Compute running balance
       let balance = opening;
       const auditTrail: AuditTxn[] = txns.map((txn) => {
