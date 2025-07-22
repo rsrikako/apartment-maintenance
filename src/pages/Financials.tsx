@@ -226,7 +226,7 @@ const Financials: React.FC = () => {
       // Helper: treat these as income, all others as expense
       const isIncomeCategory = (catId: string) => categories.filter((c: Category) => c.type === 'income').some((c: Category) => c.id === catId);
       opening = snap2.docs.reduce((sum, d) => {
-        const t = d.data();
+        const t = d.data() as { amount: number; category: string };
         return sum + Number(t.amount) * (isIncomeCategory(t.category) ? 1 : -1);
       }, 0);
       setOpeningBalance(opening);
@@ -237,7 +237,7 @@ const Financials: React.FC = () => {
         orderBy("date", "asc")
       );
       const snap = await getDocs(q);
-      const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() as { [key: string]: any } }));
       // Compute running balance
       let balance = opening;
       const auditTrail: AuditTxn[] = txns.map((txn) => {
