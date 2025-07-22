@@ -179,7 +179,8 @@ export default function ApartmentActivities() {
     fetchActivities();
   };
 
-  const updateOccurrence = async (activityId: string, occurrenceId: string, update: Record<string, unknown>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateOccurrence = async (activityId: string, occurrenceId: string, update: { [key: string]: any }) => {
     if (!selectedApartment) return;
     const occRef = doc(db, 'apartments', selectedApartment, 'activities', activityId, 'occurrences', occurrenceId);
     await updateDoc(occRef, update);
