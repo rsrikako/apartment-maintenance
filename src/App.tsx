@@ -37,12 +37,11 @@ function App() {
         navigate('/login', { replace: true });
       }
     } else {
-      // If logged in and on a public route, redirect to /profile
+      // If logged in and on a public route, redirect to /dashboard
       if (publicRoutes.includes(currentPath)) {
         navigate('/dashboard');
-      } else {
-        navigate('/login', { replace: true });
       }
+      // If logged in and on a private route, do nothing
     }
   }, [user, loading, navigate]);
 
