@@ -698,7 +698,7 @@ const Financials: React.FC = () => {
           {maintSuccess && <div className="text-green-600 mb-2">{maintSuccess}</div>}
           <div className="flex gap-4 mt-4">
             <button
-              className="bg-green-600 text-white px-6 py-2 rounded font-semibold hover:bg-green-700"
+              className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-60"
               disabled={maintLoading}
               onClick={async () => {
                 setMaintError('');
@@ -743,7 +743,7 @@ const Financials: React.FC = () => {
               Save
             </button>
             <button
-              className="bg-blue-600 text-white px-6 py-2 rounded font-semibold hover:bg-blue-700"
+              className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-60"
               disabled={maintLoading}
               onClick={async () => {
                 setMaintError('');
@@ -793,10 +793,10 @@ const Financials: React.FC = () => {
                 setMaintLoading(false);
               }}
             >
-              Notify Users Who Need to Pay
+              Notify
             </button>
             <button
-              className="bg-gray-300 text-gray-800 px-6 py-2 rounded font-semibold hover:bg-gray-400"
+              className="bg-gray-300 text-gray-800 px-6 py-2 rounded-full font-semibold shadow hover:bg-gray-400 transition-all disabled:opacity-60"
               onClick={() => {
                 setShowMaintModal(false);
                 setSelectedFlats([]);

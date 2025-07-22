@@ -86,7 +86,6 @@ const Flats: React.FC = () => {
       .then((snap) => {
         setFlats(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Flat)));
         setLoading(false);
-        toast.success('Flats loaded successfully!');
       })
       .catch(() => {
         setError("Failed to load flats");
