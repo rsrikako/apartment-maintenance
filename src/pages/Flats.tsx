@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import toast from 'react-hot-toast';
 import { useApartment } from "../context/ApartmentContext";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -85,10 +86,12 @@ const Flats: React.FC = () => {
       .then((snap) => {
         setFlats(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Flat)));
         setLoading(false);
+        toast.success('Flats loaded successfully!');
       })
       .catch(() => {
         setError("Failed to load flats");
         setLoading(false);
+        toast.error('Failed to load flats');
       });
   }, [selectedApartment]);
 
@@ -558,6 +561,7 @@ const Flats: React.FC = () => {
 
   return (
     <div className="p-4 max-w-4xl mx-auto pb-24 min-h-screen">
+      <h1 className="text-2xl sm:text-3xl font-bold text-emerald-700 text-center mb-6">Flats</h1>
       <div className="flex flex-row flex-wrap gap-3 mb-8 w-full max-w-lg mx-auto justify-center">
         {isAdmin && (
           <div className="flex flex-col items-center">

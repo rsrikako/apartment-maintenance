@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "../services/firebase";
 import {
@@ -190,10 +191,20 @@ const Financials: React.FC = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    if (!selectedApartment) return setError("No apartment selected");
-    if (!isAdmin) return setError("Only admins can add expenses/income");
+    if (!selectedApartment) {
+      setError("No apartment selected");
+      toast.error("No apartment selected");
+      return;
+    }
+    if (!isAdmin) {
+      setError("Only admins can add expenses/income");
+      toast.error("Only admins can add expenses/income");
+      return;
+    }
     if (!form.title.trim() || !form.amount || !form.category || !form.date) {
-      return setError("All fields are required");
+      setError("All fields are required");
+      toast.error("All fields are required");
+      return;
     }
     setSubmitting(true);
     try {
@@ -222,12 +233,14 @@ const Financials: React.FC = () => {
         }
       );
       setSuccess("Transaction added!");
+      toast.success("Transaction added!");
       setForm({ title: "", amount: "", category: "", date: "", file: null });
       if (fileInputRef.current) fileInputRef.current.value = "";
       // Refresh audit
       setDateRange((r) => ({ ...r }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to add transaction");
+      toast.error(e instanceof Error ? e.message : "Failed to add transaction");
     } finally {
       setSubmitting(false);
     }
@@ -238,7 +251,10 @@ const Financials: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
 
   const handleDeleteTransaction = async (txn: AuditTxn) => {
-    if (!selectedApartment) return;
+    if (!selectedApartment) {
+      toast.error('No apartment selected');
+      return;
+    }
     setDeleting(true);
     try {
       // Delete from expenses
@@ -272,8 +288,10 @@ const Financials: React.FC = () => {
       // Refresh audit
       setDateRange(r => ({ ...r }));
       setTxnToDelete(null);
+      toast.success('Transaction deleted!');
     } catch (e) {
       setError('Failed to delete transaction');
+      toast.error('Failed to delete transaction');
     } finally {
       setDeleting(false);
     }
@@ -281,7 +299,7 @@ const Financials: React.FC = () => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto pb-24">
-      <h1 className="text-2xl font-bold mb-6">Financials</h1>
+<h1 className="text-2xl sm:text-3xl font-bold text-emerald-700 text-center mb-6">Financials</h1>
       {/* Add Transaction & Maintenance Actions (admin only) */}
       {isAdmin && (
         <div className="mb-8 flex flex-col items-center">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { sendPushNotification } from '../services/sendPushNotification';
 import { db } from '../services/firebase';
 import { useApartment } from '../context/ApartmentContext';
@@ -64,10 +65,12 @@ const Notice: React.FC = () => {
     setError('');
     if (!addTitle.trim() || !addDetails.trim()) {
       setError('Title and details are required.');
+      toast.error('Title and details are required.');
       return;
     }
     if (!selectedApartment || !user) {
       setError('Apartment or user not found.');
+      toast.error('Apartment or user not found.');
       return;
     }
     try {
@@ -93,8 +96,10 @@ const Notice: React.FC = () => {
         message: addDetails,
         clickUrl: '/dashboard',
       });
+      toast.success('Notice added successfully!');
     } catch (e) {
       setError('Failed to add notice.');
+      toast.error('Failed to add notice.');
     }
   };
 
@@ -104,10 +109,12 @@ const Notice: React.FC = () => {
     setError('');
     if (!editTitle.trim() || !editDetails.trim() || !editId) {
       setError('Title and details are required.');
+      toast.error('Title and details are required.');
       return;
     }
     if (!selectedApartment) {
       setError('Apartment not found.');
+      toast.error('Apartment not found.');
       return;
     }
     try {
@@ -132,8 +139,10 @@ const Notice: React.FC = () => {
         message: editDetails,
         clickUrl: '/dashboard',
       });
+      toast.success('Notice updated successfully!');
     } catch (e) {
       setError('Failed to update notice.');
+      toast.error('Failed to update notice.');
     }
   };
 
@@ -142,6 +151,7 @@ const Notice: React.FC = () => {
     setError('');
     if (!selectedApartment) {
       setError('Apartment not found.');
+      toast.error('Apartment not found.');
       return;
     }
     try {
@@ -152,8 +162,10 @@ const Notice: React.FC = () => {
       const q = query(noticesRef, orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       setNotices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Notice)));
+      toast.success('Notice deleted successfully!');
     } catch (e) {
       setError('Failed to delete notice.');
+      toast.error('Failed to delete notice.');
     }
   };
 
@@ -169,10 +181,10 @@ const Notice: React.FC = () => {
         <div className="mb-6">
           {!showAdd ? (
             <button
-              className="bg-blue-600 text-white px-4 py-2 rounded font-semibold shadow hover:bg-blue-700"
               onClick={() => setShowAdd(true)}
+              className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-60"
             >
-              + Add Notification
+              Add Transaction
             </button>
           ) : (
             <form onSubmit={handleAdd} className="bg-blue-50 p-4 rounded shadow flex flex-col gap-2 mt-2">

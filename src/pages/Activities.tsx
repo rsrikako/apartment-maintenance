@@ -1,4 +1,5 @@
 import { useApartment } from "../context/ApartmentContext";
+import toast from 'react-hot-toast';
 import { useAuth } from "../context/AuthContext";
 import {
   collection,
@@ -166,17 +167,24 @@ export default function ApartmentActivities() {
   }, [selectedApartment, user, month]);
 
   const handleAdd = async () => {
-    if (!newActivity.name || !selectedApartment || !user) return;
+    if (!newActivity.name || !selectedApartment || !user) {
+      toast.error('Activity name, apartment, and user are required.');
+      return;
+    }
     const occurrences = getOccurrences(newActivity.frequency);
-
-    await addDoc(collection(db, 'apartments', selectedApartment, 'activities'), {
-      ...newActivity,
-      month,
-      createdBy: user.uid,
-      occurrences
-    });
-    setNewActivity({ name: '', frequency: 'daily' });
-    fetchActivities();
+    try {
+      await addDoc(collection(db, 'apartments', selectedApartment, 'activities'), {
+        ...newActivity,
+        month,
+        createdBy: user.uid,
+        occurrences
+      });
+      setNewActivity({ name: '', frequency: 'daily' });
+      fetchActivities();
+      toast.success('Activity added successfully!');
+    } catch (err) {
+      toast.error('Failed to add activity.');
+    }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,7 +222,7 @@ export default function ApartmentActivities() {
   return (
 
     <div className="p-6 max-w-4xl mx-auto pb-24 min-h-screen">
-      <h1 className="text-2xl sm:text-3xl font-bold text-emerald-700 text-center mb-6">Apartment Activities</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-emerald-700 text-center mb-6">Activities</h1>
 
       <div className="flex flex-row flex-wrap gap-3 mb-8 w-full max-w-lg mx-auto justify-center">
         {isAdmin && (

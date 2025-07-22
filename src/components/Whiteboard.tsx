@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useApartment } from '../context/ApartmentContext';
@@ -57,8 +58,10 @@ const Whiteboard: React.FC = () => {
     try {
       const docRef = doc(db, 'apartments', selectedApartment, 'meta', WHITEBOARD_DOC_ID);
       await setDoc(docRef, { note });
+      toast.success('Note saved successfully!');
     } catch (err) {
       setError('Failed to save note.');
+      toast.error('Failed to save note.');
     } finally {
       setSaving(false);
     }
@@ -87,10 +90,10 @@ const Whiteboard: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded shadow disabled:opacity-60 disabled:cursor-not-allowed transition"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
+            className="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-6 py-2 rounded-full font-semibold shadow hover:from-blue-700 hover:to-blue-600 transition-all disabled:opacity-60"
+            >
+              Save Note
+            </button>
         </>
       ) : (
         <div className="whitespace-pre-wrap min-h-[120px] text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-4">

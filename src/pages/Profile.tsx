@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import AppIcon from '../components/AppIcon';
 import { useAuth } from '../context/AuthContext';
 import { signOut } from 'firebase/auth';
@@ -148,8 +149,13 @@ const Profile: React.FC = () => {
   }, [user, setNotificationsEnabled]);
 
   const handleLogout = async () => {
-    await signOut(auth);
-    window.location.href = '/';
+    try {
+      await signOut(auth);
+      toast.success('Logged out successfully!');
+      window.location.href = '/';
+    } catch (err) {
+      toast.error('Failed to log out.');
+    }
   };
 
   const handleCreateApartment = async (e: React.FormEvent) => {
@@ -193,8 +199,10 @@ const Profile: React.FC = () => {
       setShowAdd(false);
       await refreshApartments();
       setSelectedApartment(aptRef.id); // Switch to new apartment
+      toast.success('Apartment created successfully!');
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'Failed to create apartment.');
+      toast.error(err instanceof Error ? err.message : 'Failed to create apartment.');
     } finally {
       setCreating(false);
     }
@@ -214,7 +222,10 @@ const Profile: React.FC = () => {
 
   // Delete apartment logic
   const handleDeleteApartment = async () => {
-    if (!selectedApartment) return;
+    if (!selectedApartment) {
+      toast.error('No apartment selected.');
+      return;
+    }
     setDeleting(true);
     setDeleteError('');
     try {
@@ -254,8 +265,10 @@ const Profile: React.FC = () => {
       } else {
         setSelectedApartment('');
       }
+      toast.success('Apartment deleted successfully!');
     } catch (err) {
       setDeleteError((err as Error).message || 'Failed to delete apartment.');
+      toast.error((err as Error).message || 'Failed to delete apartment.');
     } finally {
       setDeleting(false);
     }
@@ -306,9 +319,14 @@ const Profile: React.FC = () => {
               className="px-3 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 text-sm"
               onClick={async () => {
                 if (!user) return;
-                await updateDoc(doc(db, 'users', user.uid), { name });
-                setShowNameSaved(true);
-                setTimeout(() => setShowNameSaved(false), 1500);
+                try {
+                  await updateDoc(doc(db, 'users', user.uid), { name });
+                  setShowNameSaved(true);
+                  toast.success('Name updated!');
+                  setTimeout(() => setShowNameSaved(false), 1500);
+                } catch (err) {
+                  toast.error('Failed to update name.');
+                }
               }}
               type="button"
             >
@@ -333,15 +351,30 @@ const Profile: React.FC = () => {
               disabled={notificationLoading || !user}
               onClick={async () => {
                 if (notificationsEnabled) {
-                  if (user) await removeFcmToken(user);
+                  if (user) {
+                    try {
+                      await removeFcmToken(user);
+                      toast.success('Notifications disabled.');
+                    } catch (err) {
+                      toast.error('Failed to disable notifications.');
+                    }
+                  }
                 } else {
                   if (isIos() && !isPwa()) {
                     setShowIosModal(true);
                     return;
                   }
-                  if (user) await requestNotificationPermission(user);
+                  if (user) {
+                    try {
+                      await requestNotificationPermission(user);
+                      toast.success('Notifications enabled!');
+                    } catch (err) {
+                      toast.error('Failed to enable notifications.');
+                    }
+                  }
                 }
               }}
+              title={notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
             >
               <span
                 className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}

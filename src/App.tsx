@@ -1,4 +1,5 @@
 import { useAuth } from './context/AuthContext';
+import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
@@ -54,6 +55,7 @@ function App() {
 
   return (
     <>
+      <Toaster position="top-right" toastOptions={{ duration: 3500, style: { fontSize: '1rem', borderRadius: '1rem' } }} />
       {!hideNavbar && <Navbar />}
       {showA2HS && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
