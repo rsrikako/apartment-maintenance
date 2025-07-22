@@ -13,7 +13,9 @@ export async function getMaintenanceReport(apartmentId: string, month: string): 
   if (!apartmentId || !month) return { paid: [], unpaid: [], totalFlats: 0, amount: 0, month };
   // Get all flats
   const flatsSnap = await getDocs(collection(db, 'apartments', apartmentId, 'flats'));
-  const allFlats = flatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // Use Flat type to help TypeScript understand flatNumber exists
+  interface Flat { id: string; flatNumber?: string }
+  const allFlats: Flat[] = flatsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
   // Get maintenancePayments doc for the month
   const maintDoc = await getDoc(doc(db, 'apartments', apartmentId, 'maintenancePayments', month));
   const flatsPaid: string[] = maintDoc.exists() && Array.isArray(maintDoc.data()?.flatsPaid) ? maintDoc.data()?.flatsPaid : [];

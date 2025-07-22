@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, getDocs, query, where, Timestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 export interface Occurrence {
   id: string;
