@@ -70,6 +70,16 @@ const Dashboard: React.FC = () => {
           </button>
           <span className="text-xs mt-1 text-gray-700 font-medium">Whiteboard</span>
         </div>
+        <div className="flex flex-col items-center">
+          <button
+            className="flex items-center justify-center bg-purple-600 text-white rounded-full shadow hover:bg-purple-700 transition w-14 h-14"
+            onClick={() => navigate('/report')}
+            title="Report"
+          >
+            <span className="text-2xl">📄</span>
+          </button>
+          <span className="text-xs mt-1 text-gray-700 font-medium">Report</span>
+        </div>
       </div>
 
       {/* Show Notice as modal/panel if Post Notice is clicked */}

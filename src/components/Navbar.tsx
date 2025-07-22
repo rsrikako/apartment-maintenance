@@ -1,5 +1,4 @@
 import React from 'react';
-import AppIcon from './AppIcon';
 import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
@@ -49,7 +48,9 @@ const Navbar: React.FC = () => {
       <nav className="bg-white border-b border-gray-200 text-gray-800 px-4 py-2 items-center justify-between shadow-sm relative z-30 hidden md:flex">
         <div className="flex items-center gap-2">
           <span className="bg-blue-100 rounded-full p-2">
-            <AppIcon />
+            <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6" />
+            </svg>
           </span>
           <span className="font-extrabold text-xl tracking-tight">Apartment Manager</span>
         </div>
