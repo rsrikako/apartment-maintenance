@@ -23,14 +23,26 @@ import {
 } from "firebase/firestore";
 import { useApartment } from "../context/ApartmentContext";
 import { useAuth } from "../context/AuthContext";
+import { getCategories, addCategory, deleteCategory } from '../services/categoryService';
 
-const CATEGORIES = [
+// Default categories if Firestore is empty
+const DEFAULT_CATEGORIES: { value: string; label: string; type: 'income' | 'expense' }[] = [
   { value: "maintenance", label: "Maintenance", type: "income" },
   { value: "salary", label: "Salary", type: "expense" },
   { value: "utilities", label: "Utilities", type: "expense" },
   { value: "misc", label: "Miscellaneous", type: "expense" },
   { value: "income", label: "Income", type: "income" },
 ];
+
+// Inline Category type for local use
+// This avoids import/export issues and ensures the type is always available
+// for useState and other type annotations in this file.
+type Category = {
+  id: string;
+  value: string;
+  label: string;
+  type: 'income' | 'expense';
+};
 
 function getMonthRange(date = new Date()) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -67,9 +79,61 @@ interface AuditTxn {
 }
 
 const Financials: React.FC = () => {
+  // Handle add category click (for category manager)
+  const handleAddCategory = async () => {
+    setCatError('');
+    if (!catForm.label.trim() || !catForm.value.trim()) {
+      setCatError('Label and value required');
+      return;
+    }
+    if (!selectedApartment) return;
+    setCatLoading(true);
+    try {
+      await addCategory(selectedApartment, catForm);
+      setCategories(await getCategories(selectedApartment));
+      setCatForm({ label: '', value: '', type: 'expense' });
+    } catch (e) {
+      setCatError('Error adding category');
+    }
+    setCatLoading(false);
+  };
   const { selectedApartment } = useApartment();
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  // Category management state (must be inside component)
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [catForm, setCatForm] = useState<{ label: string; value: string; type: 'income' | 'expense' }>({ label: '', value: '', type: 'expense' });
+  const [catLoading, setCatLoading] = useState(false);
+  const [catError, setCatError] = useState('');
+  // Add isAdmin state
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Fetch categories from Firestore
+  useEffect(() => {
+    if (!selectedApartment) return;
+    (async () => {
+      setCatLoading(true);
+      let cats = await getCategories(selectedApartment);
+      // If no categories in Firestore, seed with defaults
+      if (cats.length === 0) {
+        await Promise.all(DEFAULT_CATEGORIES.map(c => addCategory(selectedApartment, c)));
+        cats = await getCategories(selectedApartment);
+      }
+      setCategories(cats);
+      setCatLoading(false);
+    })();
+  }, [selectedApartment, showCatManager]);
+
+  // Check admin
+  useEffect(() => {
+    if (!selectedApartment || !user) return;
+    (async () => {
+      const aptSnap = await getDoc(doc(db, "apartments", selectedApartment));
+      const data = aptSnap.data();
+      setIsAdmin(!!(data && data.admins && data.admins.includes(user.uid)));
+    })();
+  }, [selectedApartment, user]);
+
   const [form, setForm] = useState<{
     title: string;
     amount: string;
@@ -160,7 +224,7 @@ const Financials: React.FC = () => {
       );
       const snap2 = await getDocs(q2);
       // Helper: treat these as income, all others as expense
-      const isIncomeCategory = (cat: string) => CATEGORIES.filter(c => c.type === 'income').some(c => c.value === cat);
+      const isIncomeCategory = (catId: string) => categories.filter((c: Category) => c.type === 'income').some((c: Category) => c.id === catId);
       opening = snap2.docs.reduce((sum, d) => {
         const t = d.data();
         return sum + Number(t.amount) * (isIncomeCategory(t.category) ? 1 : -1);
@@ -176,15 +240,15 @@ const Financials: React.FC = () => {
       const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       // Compute running balance
       let balance = opening;
-      const auditTrail: AuditTxn[] = txns.map((txn: any) => {
-      const amt = Number(txn.amount) * (isIncomeCategory(txn.category) ? 1 : -1);
-      balance += amt;
-      return { ...txn, balance } as AuditTxn;
-    });
+      const auditTrail: AuditTxn[] = txns.map((txn) => {
+        const amt = Number(txn.amount) * (isIncomeCategory(txn.category) ? 1 : -1);
+        balance += amt;
+        return { ...txn, balance } as AuditTxn;
+      });
       setAudit(auditTrail);
       setClosingBalance(balance);
     })().finally(() => setLoadingAudit(false));
-  }, [selectedApartment, dateRange]);
+  }, [selectedApartment, dateRange, categories]);
 
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -225,7 +289,7 @@ const Financials: React.FC = () => {
         {
           title: form.title,
           amount: Number(form.amount),
-          category: form.category,
+          category: form.category, // this is now the category id
           date: new Date(form.date),
           createdBy: user?.uid,
           receiptUrl,
@@ -393,23 +457,74 @@ const Financials: React.FC = () => {
                         step="0.01"
                       />
                     </div>
-                   <div>
+                    <div>
+                      <div className="flex items-center justify-between">
                         <label className="block text-sm font-medium mb-1">Category</label>
-                       <select
+                        <button type="button" className="text-xs text-blue-600 underline ml-2" onClick={() => setShowCatManager(v => !v)}>
+                          {showCatManager ? 'Close' : 'Manage'}
+                        </button>
+                      </div>
+                      <select
                         className="w-full border rounded-lg px-4 py-3 text-base bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none"
                         value={form.category}
                         onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                         required
-                        >
+                      >
                         <option value="">Select</option>
-                        {CATEGORIES.map((c) => (
-                            <option key={c.value} value={c.value} className="text-base">
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id} className="text-base">
                             {c.label}
-                            </option>
+                          </option>
                         ))}
-                        </select>
-
+                      </select>
+                      {showCatManager && (
+                        <div className="mt-3 border rounded-lg p-3 bg-gray-50">
+                          <div className="font-semibold mb-2 text-sm text-gray-700">Manage Categories</div>
+                          {catLoading ? (
+                            <div className="text-xs text-gray-500">Loading...</div>
+                          ) : (
+                            <ul className="mb-2 max-h-32 overflow-y-auto">
+                              {categories.map((cat) => (
+                                <li key={cat.id} className="flex items-center justify-between py-1 text-sm">
+                                  <span>{cat.label} <span className="text-xs text-gray-400">({cat.type})</span></span>
+                                  <button type="button" className="text-red-500 hover:text-red-700 text-xs ml-2" onClick={async () => {
+                                    if (!selectedApartment) return;
+                                    setCatLoading(true);
+                                    // Check if any transactions exist for this category
+                                    const txnsSnap = await getDocs(query(
+                                      collection(db, 'apartments', selectedApartment, 'expenses'),
+                                      where('category', '==', cat.id)
+                                    ));
+                                    if (!txnsSnap.empty) {
+                                      toast.error('Cannot delete: There are transactions in this category.');
+                                      setCatLoading(false);
+                                      return;
+                                    }
+                                    await deleteCategory(selectedApartment, cat.id);
+                                    setCategories(await getCategories(selectedApartment));
+                                    setCatLoading(false);
+                                  }}>Remove</button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <form className="flex flex-col gap-2 mt-2" autoComplete="off" onSubmit={e => e.preventDefault()}>
+                            <div className="flex gap-4">
+                              <input type="text" className="border rounded px-2 py-1 text-xs flex-1" placeholder="Label" value={catForm.label} onChange={e => setCatForm(f => ({ ...f, label: e.target.value }))} />
+                              <input type="text" className="border rounded px-2 py-1 text-xs flex-1" placeholder="Value (unique)" value={catForm.value} onChange={e => setCatForm(f => ({ ...f, value: e.target.value }))} />
+                            </div>
+                            <div className="flex gap-4 mt-2">
+                              <select className="border rounded px-2 py-1 text-xs" value={catForm.type} onChange={e => setCatForm(f => ({ ...f, type: e.target.value as 'income' | 'expense' }))} disabled={catLoading}>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                              </select>
+                              <button type="button" className="bg-blue-500 text-white rounded px-2 py-1 text-xs font-semibold hover:bg-blue-600" disabled={catLoading} onClick={handleAddCategory}>Add</button>
+                            </div>
+                            {catError && <div className="text-xs text-red-500 mt-1">{catError}</div>}
+                          </form>
                         </div>
+                      )}
+                    </div>
 
                     <div>
                       <label className="block text-sm font-medium mb-1">
@@ -576,12 +691,12 @@ const Financials: React.FC = () => {
                   </div>
                   <div
                     className={`font-semibold ${
-                      CATEGORIES.filter(c => c.type === 'income').some(c => c.value === txn.category)
+                      categories.filter((c: Category) => c.type === 'income').some((c: Category) => c.id === txn.category)
                         ? "text-green-600"
                         : "text-red-600"
                     }`}
                   >
-                    {CATEGORIES.filter(c => c.type === 'income').some(c => c.value === txn.category) ? "+" : "-"}₹
+                    {categories.filter((c: Category) => c.type === 'income').some((c: Category) => c.id === txn.category) ? "+" : "-"}₹
                     {Number(txn.amount).toFixed(2)}
                   </div>
                 </div>
@@ -590,8 +705,7 @@ const Financials: React.FC = () => {
 
                 <div className="flex flex-wrap gap-2 text-sm text-gray-600 mb-2">
                   <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
-                    {CATEGORIES.find((c) => c.value === txn.category)?.label ||
-                      txn.category}
+                    {categories.find((c: Category) => c.id === txn.category)?.label || txn.category}
                   </span>
                   <span className="text-gray-500">
                     Balance: ₹{txn.balance.toFixed(2)}
