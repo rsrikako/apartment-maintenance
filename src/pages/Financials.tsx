@@ -282,39 +282,37 @@ const Financials: React.FC = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto pb-24">
       <h1 className="text-2xl font-bold mb-6">Financials</h1>
-      {/* Add Transaction Form (admin only) */}
+      {/* Add Transaction & Maintenance Actions (admin only) */}
       {isAdmin && (
-        <div className="mb-8 flex gap-4 flex-wrap">
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-blue-500 to-blue-400 text-white px-6 py-3 rounded-full shadow-lg font-semibold text-base hover:from-blue-600 hover:to-blue-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 flex items-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Transaction
-          </button>
-          <button
-            onClick={() => {
-              setShowMaintModal(true);
-              setMaintSuccess('');
-              setMaintError('');
-            }}
-            className="bg-gradient-to-r from-green-500 to-green-400 text-white px-6 py-3 rounded-full shadow-lg font-semibold text-base hover:from-green-600 hover:to-green-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a4 4 0 014-4h4m0 0V7a4 4 0 00-4-4H7a4 4 0 00-4 4v10a4 4 0 004 4h4" /></svg>
-            Maintenance
-          </button>
+        <div className="mb-8 flex flex-col items-center">
+          <div className="flex gap-8 flex-wrap justify-center">
+            {/* Add Transaction Button - Dashboard style (emoji icon, flat color, text below) */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-full bg-blue-500 text-white shadow hover:bg-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                style={{ fontSize: '1.75rem' }}
+              >
+                <span role="img" aria-label="Add Transaction">💸</span>
+              </button>
+              <span className="block text-center text-sm font-normal mt-2">Add Transaction</span>
+            </div>
+            {/* Maintenance Button - Dashboard style (emoji icon, flat color, text below) */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={() => {
+                  setShowMaintModal(true);
+                  setMaintSuccess('');
+                  setMaintError('');
+                }}
+                className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-full bg-green-500 text-white shadow hover:bg-green-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300"
+                style={{ fontSize: '1.75rem' }}
+              >
+                <span role="img" aria-label="Maintenance">🛠️</span>
+              </button>
+              <span className="block text-center text-sm font-normal mt-2">Maintenance</span>
+            </div>
+          </div>
           {showModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
               <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl relative animate-fadeInUp">
@@ -488,28 +486,30 @@ const Financials: React.FC = () => {
       )}
 
       {/* Audit Trail and Balance */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-end gap-4">
-        <div className="flex-1">
-          <label className="block text-sm font-medium mb-1">From</label>
-          <input
-            type="date"
-            className="w-full border rounded px-3 py-2"
-            value={dateRange.from}
-            onChange={(e) =>
-              setDateRange((r) => ({ ...r, from: e.target.value }))
-            }
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-sm font-medium mb-1">To</label>
-          <input
-            type="date"
-            className="w-full border rounded px-3 py-2"
-            value={dateRange.to}
-            onChange={(e) =>
-              setDateRange((r) => ({ ...r, to: e.target.value }))
-            }
-          />
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end gap-4">
+        <div className="flex flex-row gap-2 w-full">
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-1">From</label>
+            <input
+              type="date"
+              className="w-full border rounded px-3 py-2"
+              value={dateRange.from}
+              onChange={(e) =>
+                setDateRange((r) => ({ ...r, from: e.target.value }))
+              }
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm font-medium mb-1">To</label>
+            <input
+              type="date"
+              className="w-full border rounded px-3 py-2"
+              value={dateRange.to}
+              onChange={(e) =>
+                setDateRange((r) => ({ ...r, to: e.target.value }))
+              }
+            />
+          </div>
         </div>
       </div>
       <div className="bg-white rounded-lg shadow-lg p-6">

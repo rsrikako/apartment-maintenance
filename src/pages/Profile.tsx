@@ -56,7 +56,7 @@ const Profile: React.FC = () => {
   // Notification states
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [showIosModal, setShowIosModal] = useState(false);
-  const [fcmToken, setFcmToken] = useState<string | null>(null);
+  // Removed unused fcmToken state to fix lint error
 
   // Utility: request permission and save token
   async function requestNotificationPermission(user: import('firebase/auth').User) {
@@ -74,7 +74,7 @@ const Profile: React.FC = () => {
         fcmTokens: arrayUnion(token),
         notificationsEnabled: true,
       });
-      setFcmToken(token);
+      // setFcmToken(token); // removed unused state
       setNotificationsEnabled(true);
       return token;
     } catch (err) {
@@ -87,19 +87,22 @@ const Profile: React.FC = () => {
   }
 
   // Utility: remove token
-  async function removeFcmToken(user: import('firebase/auth').User, token: string | null) {
+  async function removeFcmToken(user: import('firebase/auth').User) {
     setNotificationLoading(true);
     try {
-      if (!token) return;
       const { getMessaging, deleteToken } = await import('firebase/messaging');
       const messaging = getMessaging();
-      await deleteToken(messaging);
+      try {
+        await deleteToken(messaging);
+      } catch {
+        // Ignore errors if token is already deleted or not available
+      }
       await updateDoc(doc(db, 'users', user.uid), {
-        fcmTokens: arrayRemove(token),
+        fcmTokens: [],
         notificationsEnabled: false,
       });
       setNotificationsEnabled(false);
-      setFcmToken(null);
+      // setFcmToken(null); // removed unused state
     } catch (err) {
       alert((err as Error).message || 'Failed to disable notifications.');
     } finally {
@@ -132,13 +135,13 @@ const Profile: React.FC = () => {
           fcmTokens: [],
         });
         setNotificationsEnabled(false);
-        setFcmToken(null);
+        // setFcmToken(null); // removed unused state
       } else {
         setName(userDoc.data()?.name || '');
         setNotificationsEnabled(!!userDoc.data()?.notificationsEnabled);
         // Try to get current token from fcmTokens array
-        const tokens = userDoc.data()?.fcmTokens || [];
-        setFcmToken(tokens.length ? tokens[0] : null);
+        // const tokens = userDoc.data()?.fcmTokens || []; // removed unused variable
+        // setFcmToken(tokens.length ? tokens[0] : null); // removed unused state
       }
     };
     fetchUser();
@@ -260,106 +263,117 @@ const Profile: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-2 bg-gradient-to-br from-slate-100 via-stone-100 to-slate-200">
-      <div className="w-full max-w-sm bg-white bg-opacity-90 rounded-2xl shadow-2xl p-6 flex flex-col items-center pb-24">
-        {/* Suggest notification/PWA modal */}
-        {showSuggestModal && (
+      {/* Suggest notification/PWA modal */}
+      {showSuggestModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 max-w-xs w-full flex flex-col items-center">
+            <div className="text-lg font-bold text-emerald-600 mb-2">Get the Most Out of the App</div>
+            <div className="text-sm text-gray-700 mb-4 text-center">
+              {Notification?.permission !== 'granted' && (
+                <>
+                  <div>To receive important updates, please enable notifications.</div>
+                  <button className="mt-2 px-3 py-2 bg-emerald-600 text-white rounded" onClick={async () => {
+                    if (user) await requestNotificationPermission(user);
+                    setShowSuggestModal(false);
+                  }}>Enable Notifications</button>
+                </>
+              )}
+              {!window.matchMedia('(display-mode: standalone)').matches && isIos() && (
+                <div className="mt-4">For best experience, add this app to your home screen.<br />Tap <b>Share</b> &gt; <b>Add to Home Screen</b>.</div>
+              )}
+            </div>
+            <button className="px-3 py-2 bg-gray-300 text-gray-800 rounded mt-2" onClick={() => setShowSuggestModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
+      {/* Main card container */}
+      <div className="w-full max-w-sm flex flex-col gap-4 pb-24">
+
+        {/* User Info Card */}
+        <div className="bg-white bg-opacity-90 rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+          <AppIcon className="w-10 h-10 text-emerald-600 mb-2" />
+          <h2 className="text-2xl font-bold text-emerald-700 mb-4 text-center">Profile</h2>
+          <div className="flex gap-2 w-full items-center justify-center mb-2">
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded focus:ring-2 focus:ring-emerald-200 text-base flex-1 bg-white"
+              placeholder="Enter your name"
+              style={{ minWidth: 0 }}
+            />
+            <button
+              className="px-3 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 text-sm"
+              onClick={async () => {
+                if (!user) return;
+                await updateDoc(doc(db, 'users', user.uid), { name });
+                setShowNameSaved(true);
+                setTimeout(() => setShowNameSaved(false), 1500);
+              }}
+              type="button"
+            >
+              Save
+            </button>
+          </div>
+          {showNameSaved && (
+            <div className="text-emerald-600 text-xs mt-1">Name updated!</div>
+          )}
+          <div className="text-base font-semibold text-center text-slate-700 mt-2">Mobile: {user?.phoneNumber}</div>
+        </div>
+
+        {/* Enable Notifications Card */}
+        <div className="bg-white bg-opacity-90 rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+          <div className="flex items-center w-full justify-center">
+            <label className="mr-4 text-sm font-medium">Enable Notifications</label>
+            {/* Toggle Switch */}
+            <button
+              type="button"
+              className={`relative inline-flex h-6 w-12 border-2 border-transparent rounded-full cursor-pointer transition-colors duration-200 focus:outline-none ${notificationsEnabled ? 'bg-emerald-500' : 'bg-gray-300'}`}
+              aria-pressed={notificationsEnabled}
+              disabled={notificationLoading || !user}
+              onClick={async () => {
+                if (notificationsEnabled) {
+                  if (user) await removeFcmToken(user);
+                } else {
+                  if (isIos() && !isPwa()) {
+                    setShowIosModal(true);
+                    return;
+                  }
+                  if (user) await requestNotificationPermission(user);
+                }
+              }}
+            >
+              <span
+                className={`inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${notificationsEnabled ? 'translate-x-6' : 'translate-x-0'}`}
+              />
+            </button>
+            {notificationLoading && <span className="ml-2 text-xs text-gray-400">...</span>}
+          </div>
+        </div>
+
+        {/* iOS install modal */}
+        {showIosModal && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-xs w-full flex flex-col items-center">
-              <div className="text-lg font-bold text-emerald-600 mb-2">Get the Most Out of the App</div>
+              <div className="text-lg font-bold text-emerald-600 mb-2">Install App</div>
               <div className="text-sm text-gray-700 mb-4 text-center">
-                {Notification?.permission !== 'granted' && (
-                  <>
-                    <div>To receive important updates, please enable notifications.</div>
-                    <button className="mt-2 px-3 py-2 bg-emerald-600 text-white rounded" onClick={async () => {
-                      if (user) await requestNotificationPermission(user);
-                      setShowSuggestModal(false);
-                    }}>Enable Notifications</button>
-                  </>
-                )}
-                {!window.matchMedia('(display-mode: standalone)').matches && isIos() && (
-                  <div className="mt-4">For best experience, add this app to your home screen.<br />Tap <b>Share</b> &gt; <b>Add to Home Screen</b>.</div>
-                )}
+                To receive notifications, please install this app to your home screen.<br />
+                Tap <b>Share</b> &gt; <b>Add to Home Screen</b>.
               </div>
-              <button className="px-3 py-2 bg-gray-300 text-gray-800 rounded mt-2" onClick={() => setShowSuggestModal(false)}>Close</button>
+              <button className="px-3 py-2 bg-emerald-600 text-white rounded" onClick={() => setShowIosModal(false)}>Close</button>
             </div>
           </div>
         )}
-        <div className="flex flex-col items-center mb-2">
-          <AppIcon className="w-10 h-10 text-emerald-600 mb-2" />
-          <h2 className="text-2xl font-bold text-emerald-700 mb-4 text-center">Profile</h2>
-        </div>
-        <div className="mb-4 w-full">
-          <div className="flex flex-col items-center w-full mb-4">
-            <div className="flex gap-2 w-full items-center justify-center">
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                className="px-3 py-2 border border-slate-200 rounded focus:ring-2 focus:ring-emerald-200 text-base flex-1 bg-white"
-                placeholder="Enter your name"
-                style={{ minWidth: 0 }}
-              />
-              <button
-                className="px-3 py-2 bg-emerald-600 text-white rounded shadow hover:bg-emerald-700 text-sm"
-                onClick={async () => {
-                  if (!user) return;
-                  await updateDoc(doc(db, 'users', user.uid), { name });
-                  setShowNameSaved(true);
-                  setTimeout(() => setShowNameSaved(false), 1500);
-                }}
-                type="button"
-              >
-                Save
-              </button>
-            </div>
-            {showNameSaved && (
-              <div className="text-emerald-600 text-xs mt-1">Name updated!</div>
-            )}
-            {/* Notification toggle */}
-            <div className="flex items-center mt-4 w-full justify-center">
-              <label className="mr-2 text-sm">Enable Notifications</label>
-              <input
-                type="checkbox"
-                checked={notificationsEnabled}
-                disabled={notificationLoading || !user}
-                onChange={async (e) => {
-                  if (e.target.checked) {
-                    if (isIos() && !isPwa()) {
-                      setShowIosModal(true);
-                      return;
-                    }
-                    if (user) await requestNotificationPermission(user);
-                  } else {
-                    if (user) await removeFcmToken(user, fcmToken);
-                  }
-                }}
-              />
-              {notificationLoading && <span className="ml-2 text-xs text-gray-400">...</span>}
-            </div>
-            {/* iOS install modal */}
-            {showIosModal && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                <div className="bg-white rounded-lg shadow-lg p-6 max-w-xs w-full flex flex-col items-center">
-                  <div className="text-lg font-bold text-emerald-600 mb-2">Install App</div>
-                  <div className="text-sm text-gray-700 mb-4 text-center">
-                    To receive notifications, please install this app to your home screen.<br />
-                    Tap <b>Share</b> &gt; <b>Add to Home Screen</b>.
-                  </div>
-                  <button className="px-3 py-2 bg-emerald-600 text-white rounded" onClick={() => setShowIosModal(false)}>Close</button>
-                </div>
-              </div>
-            )}
-            </div>
-            {showNameSaved && (
-              <div className="text-emerald-600 text-xs mt-1">Name updated!</div>
-            )}
-          <div className="text-base font-semibold text-center text-slate-700">Mobile: {user?.phoneNumber}</div>
+
+        {/* Apartment Selection Card */}
+        <div className="bg-white bg-opacity-90 rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+          <div className="text-lg font-semibold text-emerald-700 mb-2">Apartment</div>
           {(!apartments.length || !selectedApartment) && (
-            <div className="mt-4 text-center text-orange-500 font-semibold">
+            <div className="mb-2 text-center text-orange-500 font-semibold">
               Please select or create an apartment to use the app.
             </div>
           )}
-          <div className="mt-4 flex flex-col gap-2 items-center">
+          <div className="flex flex-col gap-2 items-center w-full">
             <label className="block text-sm font-medium mb-1 text-center text-slate-700">Select Apartment</label>
             <div className="flex w-full gap-2 items-center">
               <select
@@ -389,53 +403,59 @@ const Profile: React.FC = () => {
                 </button>
               )}
             </div>
-            {showAdd && (
-              <form onSubmit={handleCreateApartment} className="w-full mt-2 flex flex-col gap-2 bg-white bg-opacity-80 border border-slate-200 rounded-2xl p-4 shadow">
-                <input
-                  type="text"
-                  placeholder="Apartment Name"
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Address"
-                  value={newAddress}
-                  onChange={e => setNewAddress(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
-                  required
-                />
-                <div className="font-semibold text-emerald-700 mt-2 mb-1 text-center">Your Flat Details</div>
-                <input
-                  type="text"
-                  placeholder="Flat Number"
-                  value={newFlatNumber}
-                  onChange={e => setNewFlatNumber(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
-                  required
-                />
-                <select
-                  value={newFlatStatus}
-                  onChange={e => setNewFlatStatus(e.target.value as 'self' | 'rented')}
-                  className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
-                >
-                  <option value="self">Owner</option>
-                  <option value="rented">Tenant</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="bg-emerald-600 text-white px-4 py-2 rounded font-semibold shadow hover:bg-emerald-700 transition-all disabled:opacity-60"
-                >
-                  {creating ? 'Creating...' : 'Add'}
-                </button>
-                {createError && <div className="text-orange-500 text-xs mt-1">{createError}</div>}
-              </form>
-            )}
           </div>
         </div>
+
+        {/* Add Apartment Card (only when adding) */}
+        {showAdd && (
+          <div className="bg-white bg-opacity-90 rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+            <form onSubmit={handleCreateApartment} className="w-full flex flex-col gap-2">
+              <div className="text-lg font-semibold text-emerald-700 mb-2 text-center">Add Apartment</div>
+              <input
+                type="text"
+                placeholder="Apartment Name"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Address"
+                value={newAddress}
+                onChange={e => setNewAddress(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
+                required
+              />
+              <div className="font-semibold text-emerald-700 mt-2 mb-1 text-center">Your Flat Details</div>
+              <input
+                type="text"
+                placeholder="Flat Number"
+                value={newFlatNumber}
+                onChange={e => setNewFlatNumber(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
+                required
+              />
+              <select
+                value={newFlatStatus}
+                onChange={e => setNewFlatStatus(e.target.value as 'self' | 'rented')}
+                className="w-full px-3 py-2 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-emerald-200 text-base bg-white"
+              >
+                <option value="self">Owner</option>
+                <option value="rented">Tenant</option>
+              </select>
+              <button
+                type="submit"
+                disabled={creating}
+                className="bg-emerald-600 text-white px-4 py-2 rounded font-semibold shadow hover:bg-emerald-700 transition-all disabled:opacity-60"
+              >
+                {creating ? 'Creating...' : 'Add'}
+              </button>
+              {createError && <div className="text-orange-500 text-xs mt-1">{createError}</div>}
+            </form>
+          </div>
+        )}
+
         {/* Delete confirmation modal */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -458,9 +478,13 @@ const Profile: React.FC = () => {
             </div>
           </div>
         )}
-        <button onClick={handleLogout} className="mt-4 w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-base">Logout</button>
-        <div className="mt-6 text-gray-400 text-xs text-center">
-          &copy; {new Date().getFullYear()} Apartment Activity Management
+
+        {/* Logout and Footer Card */}
+        <div className="bg-white bg-opacity-90 rounded-2xl shadow-2xl p-6 flex flex-col items-center">
+          <button onClick={handleLogout} className="w-full py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-base">Logout</button>
+          <div className="mt-6 text-gray-400 text-xs text-center">
+            &copy; {new Date().getFullYear()} Apartment Activity Management
+          </div>
         </div>
       </div>
     </div>
