@@ -11,6 +11,7 @@ import Flats from './pages/Flats';
 import Financials from './pages/Financials';
 import ApartmentActivities from './pages/Activities';
 import LandingPage from './pages/LandingPage';
+import Report from './pages/Report';
 
 function App() {
   const { user, loading } = useAuth();
@@ -96,6 +97,7 @@ function App() {
           )
         } />
         <Route path="/dummy-logout" element={<DummyLogout />} />
+        <Route path="/report" element={<Report />} />
       </Routes>
     </>
   );
