@@ -378,7 +378,7 @@ const Financials: React.FC = () => {
             <div className="flex flex-col items-center">
               <button
                 onClick={() => setShowModal(true)}
-                className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-full bg-blue-500 text-white shadow hover:bg-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                className="flex items-center justify-center w-14 h-14 md:w-14 md:h-14 rounded-full bg-blue-500 text-white shadow hover:bg-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
                 style={{ fontSize: '1.75rem' }}
               >
                 <span role="img" aria-label="Add Transaction">💸</span>
@@ -393,7 +393,7 @@ const Financials: React.FC = () => {
                   setMaintSuccess('');
                   setMaintError('');
                 }}
-                className="flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-full bg-green-500 text-white shadow hover:bg-green-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300"
+                className="flex items-center justify-center w-14 h-14 md:w-14 md:h-14 rounded-full bg-green-500 text-white shadow hover:bg-green-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300"
                 style={{ fontSize: '1.75rem' }}
               >
                 <span role="img" aria-label="Maintenance">🛠️</span>
