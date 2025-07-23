@@ -134,6 +134,10 @@ const Financials: React.FC = () => {
     })();
   }, [selectedApartment, user]);
 
+  const getTodayYYYYMMDD = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
   const [form, setForm] = useState<{
     title: string;
     amount: string;
@@ -144,7 +148,7 @@ const Financials: React.FC = () => {
     title: "",
     amount: "",
     category: "",
-    date: "",
+    date: getTodayYYYYMMDD(),
     file: null,
   });
   const [showModal, setShowModal] = useState(false);

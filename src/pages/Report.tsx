@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useApartment } from '../context/ApartmentContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getFinancialReport, CATEGORIES } from '../services/financialReport';
+import { getFinancialReport } from '../services/financialReport';
+import { getCategories, Category } from '../services/categoryService';
 import { getActivitiesReport } from '../services/activitiesReport';
 import { getMaintenanceReport } from '../services/maintenanceReport';
 import type { MaintenanceReport } from '../services/maintenanceReport';
@@ -14,12 +15,13 @@ import type { Activity, Occurrence } from '../services/activitiesReport';
 // import { useFinancials, useActivities, useMaintenance, useNotices } from '../services/reportData';
 
 const Report: React.FC = () => {
-  // Default to current month (YYYY-MM)
-  const currentMonth = (() => {
+  // Default to previous month (YYYY-MM)
+  const getPreviousMonthYYYYMM = () => {
     const d = new Date();
+    d.setMonth(d.getMonth() - 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  })();
-  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonth);
+  };
+  const [selectedMonth, setSelectedMonth] = useState<string>(getPreviousMonthYYYYMM());
   const { selectedApartment } = useApartment();
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +39,7 @@ const Report: React.FC = () => {
     createdAt?: Date | { toDate: () => Date };
     balance: number;
   }[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [maintenance, setMaintenance] = useState<MaintenanceReport | null>(null);
   const [notifications, setNotifications] = useState<Notice[]>([]);
@@ -48,13 +51,15 @@ const Report: React.FC = () => {
       getActivitiesReport(selectedApartment, selectedMonth),
       getNoticesReport(selectedApartment),
       getMaintenanceReport(selectedApartment, selectedMonth),
-    ]).then(([fin, acts, notices, maint]) => {
+      getCategories(selectedApartment),
+    ]).then(([fin, acts, notices, maint, cats]) => {
       setOpeningBalance(fin.openingBalance);
       setClosingBalance(fin.closingBalance);
       setTransactions(fin.transactions);
       setActivities(acts);
       setNotifications(notices);
       setMaintenance(maint);
+      setCategories(cats);
     }).finally(() => setLoading(false));
   }, [selectedApartment, selectedMonth]);
 
@@ -194,7 +199,7 @@ const Report: React.FC = () => {
             : t.date instanceof Date
               ? t.date.toLocaleDateString()
               : '',
-          CATEGORIES.find(c => c.value === t.category)?.label || t.category,
+          categories.find(c => c.id === t.category)?.label || t.category,
           t.title || '',
           `Rs. ${t.amount}`,
           `Rs. ${t.balance}`

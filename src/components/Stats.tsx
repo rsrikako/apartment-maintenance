@@ -21,12 +21,32 @@ const Stats: React.FC = () => {
   const { selectedApartment } = useApartment();
   const [month, setMonth] = useState<string>(getCurrentMonthYYYYMM());
   const [expensesData, setExpensesData] = useState<ChartData | null>(null);
-  const [maintenanceData, setMaintenanceData] = useState<any>(null);
-  const [activitiesData, setActivitiesData] = useState<any>(null);
+  interface MaintenanceData {
+    flatsPaid?: string[];
+    amount?: number;
+    month?: string;
+    updatedAt?: unknown;
+  }
+  interface ActivitiesData {
+    total: number;
+  }
+  const [maintenanceData, setMaintenanceData] = useState<MaintenanceData | null>(null);
+  const [activitiesData, setActivitiesData] = useState<ActivitiesData | null>(null);
   const [totalFlats, setTotalFlats] = useState<number | null>(null);
   const [flatsPieData, setFlatsPieData] = useState<ChartData | null>(null);
   const [activitiesPieData, setActivitiesPieData] = useState<ChartData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<{ id: string; label: string; type: string }[]>([]);
+
+  useEffect(() => {
+    if (!selectedApartment) return;
+    // Fetch categories from Firestore
+    (async () => {
+      const { collection, getDocs } = await import('firebase/firestore');
+      const catsSnap = await getDocs(collection(db, 'apartments', selectedApartment, 'categories'));
+      setCategories(catsSnap.docs.map(d => ({ id: d.id, ...d.data() } as { id: string; label: string; type: string })));
+    })();
+  }, [selectedApartment]);
 
   useEffect(() => {
     if (!selectedApartment || !month) return;
@@ -51,13 +71,18 @@ const Stats: React.FC = () => {
       );
       const snap = await getDocs(q);
       const txns = snap.docs.map(d => d.data());
-      // Aggregate by category
+      // Aggregate by category id
       const categoryTotals: Record<string, number> = {};
       txns.forEach(t => {
         categoryTotals[t.category] = (categoryTotals[t.category] || 0) + Number(t.amount);
       });
+      // Map category ids to labels for chart
+      const labels = Object.keys(categoryTotals).map(catId => {
+        const cat = categories.find(c => c.id === catId);
+        return cat ? cat.label : catId;
+      });
       setExpensesData({
-        labels: Object.keys(categoryTotals),
+        labels,
         datasets: [{
           label: 'Expenses by Category',
           data: Object.values(categoryTotals),
@@ -88,10 +113,10 @@ const Stats: React.FC = () => {
           where('expectedDate', '<=', toTS)
         );
         const occSnap = await getDocs(occQuery);
-        const occs = occSnap.docs.map(d => d.data());
+        const occs = occSnap.docs.map(d => d.data() as { status?: string });
         if (occs.length === 0) {
           notCompleted += 1;
-        } else if (occs.every((o: any) => o.status === 'completed' || o.status === 'skipped')) {
+        } else if (occs.every((o) => o.status === 'completed' || o.status === 'skipped')) {
           completed += 1;
         } else {
           notCompleted += 1;
@@ -107,7 +132,7 @@ const Stats: React.FC = () => {
 
       setLoading(false);
     })();
-  }, [selectedApartment, month]);
+  }, [selectedApartment, month, categories]);
 
   useEffect(() => {
     if (maintenanceData && totalFlats !== null) {
