@@ -1,6 +1,18 @@
 import { db } from './firebase';
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
-import { getCategories, Category } from './categoryService';
+import { getCategories } from './categoryService';
+import type { Category } from './categoryService';
+
+interface FirestoreTxn {
+  id: string;
+  title?: string;
+  amount: number;
+  category: string;
+  date: Date | { toDate: () => Date };
+  createdBy?: string;
+  receiptUrl?: string;
+  createdAt?: Date | { toDate: () => Date };
+}
 
 export function getMonthRange(date = new Date()) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -50,10 +62,11 @@ export async function getFinancialReport(apartmentId: string, month: string) {
   const txns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   // Compute running balance
   let balance = opening;
-  const transactions = txns.map((txn: any) => {
-    const amt = Number(txn.amount) * (isIncomeCategory(txn.category) ? 1 : -1);
+  const transactions = txns.map((txn) => {
+    const t = txn as FirestoreTxn;
+    const amt = Number(t.amount) * (isIncomeCategory(t.category) ? 1 : -1);
     balance += amt;
-    return { ...txn, balance };
+    return { ...t, balance };
   });
   return {
     openingBalance: opening,
