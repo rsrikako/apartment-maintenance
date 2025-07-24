@@ -832,10 +832,12 @@ const Financials: React.FC = () => {
                   // Add a transaction for each selected flat
                   await Promise.all(selectedFlats.map(flatId => {
                     const flat = flats.find(f => f.id === flatId);
+                    // Find the maintenance category id from categories
+                    const maintenanceCat = categories.find(c => c.value === 'maintenance');
                     return addDoc(collection(db, 'apartments', selectedApartment, 'expenses'), {
                         title: `Maintenance for ${maintMonth} by Flat #${flat ? flat.flatNumber : flatId}`,
                         amount: Number(maintAmount),
-                        category: 'maintenance',
+                        category: maintenanceCat ? maintenanceCat.id : 'maintenance',
                         date: new Date(),
                         createdBy: user?.uid,
                         createdAt: Timestamp.now(),
