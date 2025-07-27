@@ -12,7 +12,8 @@ export async function sendPushNotification({ apartmentId, userIds, title, messag
   const functions = getFunctions();
   const sendNotification = httpsCallable(functions, 'sendApartmentPushNotification');
   try {
-    await sendNotification({ apartmentId, userIds, title, message, clickUrl });
+    const response = await sendNotification({ apartmentId, userIds, title, message, clickUrl });
+    console.log('Push notification sent successfully:', response);
   } catch (err) {
     console.error('Failed to send push notification:', err);
   }

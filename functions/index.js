@@ -107,11 +107,12 @@ exports.createUserAndFirestore = onCall(async (request) => {
 
 exports.sendApartmentPushNotification = onCall(async (request) => {
   try {
+    console.log('started sending push notification');
     const { apartmentId, userIds, title, message, clickUrl } = request.data;
     if (!title || !message || (!apartmentId && !userIds)) {
       throw new Error('Missing required fields');
     }
-
+    console.log('started sending push notification1', apartmentId);
     // Get user IDs: either from userIds or all users in apartment
     let targetUserIds = userIds;
     if (!targetUserIds && apartmentId) {
@@ -120,10 +121,10 @@ exports.sendApartmentPushNotification = onCall(async (request) => {
         .where('apartments', 'array-contains', apartmentId).get();
       targetUserIds = usersSnap.docs.map(doc => doc.id);
     }
+    console.log('started sending push notification2', targetUserIds);
 
     let tokensToSend = [];
     let userTokenMap = {}; // For token cleanup
-
     // Fetch FCM tokens for each user, only if notificationsEnabled == true
     for (const uid of targetUserIds) {
       const userDoc = await admin.firestore().collection('users').doc(uid).get();
@@ -134,11 +135,11 @@ exports.sendApartmentPushNotification = onCall(async (request) => {
         userTokenMap[uid] = fcmTokens;
       }
     }
-
+    console.log('started sending push notification3', tokensToSend);
     if (tokensToSend.length === 0) {
       return { result: 'No tokens to send' };
     }
-
+    console.log('tokensToSend:', tokensToSend);
     // Prepare notification payload
     const payload = {
       notification: {
@@ -150,10 +151,11 @@ exports.sendApartmentPushNotification = onCall(async (request) => {
         clickUrl: clickUrl || '',
       }
     };
+    console.log('Notification payload:', payload);
 
     // Send notifications
     const response = await admin.messaging().sendToDevice(tokensToSend, payload);
-
+    console.log('Notification response:', response);
     // Remove invalid tokens
     const tokensToRemove = [];
     response.results.forEach((result, idx) => {
