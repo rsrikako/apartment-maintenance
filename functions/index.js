@@ -1,6 +1,14 @@
 const { onCall } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
-admin.initializeApp();
+const { FieldValue } = require('firebase-admin/firestore');
+if (process.env.FUNCTIONS_EMULATOR) {
+  const serviceAccount = require('../serviceAccountKey.json');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+} else {
+  admin.initializeApp(); // Production: Firebase provides credentials automatically
+}
 
 exports.checkUserByPhone = onCall(async (request) => {
   console.log('request.auth:', request.auth);
@@ -139,48 +147,52 @@ exports.sendApartmentPushNotification = onCall(async (request) => {
     if (tokensToSend.length === 0) {
       return { result: 'No tokens to send' };
     }
-    console.log('tokensToSend:', tokensToSend);
-    // Prepare notification payload
-    const payload = {
-      notification: {
-        title,
-        body: message,
-        click_action: clickUrl || '',
-      },
-      data: {
-        clickUrl: clickUrl || '',
-      }
-    };
-    console.log('Notification payload:', payload);
 
-    // Send notifications
-    const response = await admin.messaging().sendToDevice(tokensToSend, payload);
-    console.log('Notification response:', response);
-    // Remove invalid tokens
+    console.log('Sending notifications to', tokensToSend.length, 'tokens');
+
     const tokensToRemove = [];
-    response.results.forEach((result, idx) => {
-      const error = result.error;
-      if (error) {
-        // Token is invalid, remove from Firestore
-        tokensToRemove.push(tokensToSend[idx]);
-      }
-    });
 
-    // Remove invalid tokens from users
+    // Send each notification individually (send() does not support array of tokens)
+    for (const token of tokensToSend) {
+      try {
+        const response = await admin.messaging().send({
+          token,
+          notification: {
+            title,
+            body: message
+          },
+          data: {
+            clickUrl: clickUrl || ''
+          }
+        });
+
+        console.log(`Notification sent to token: ${token} ->`, response);
+      } catch (err) {
+        console.warn(`Failed to send to token: ${token}`, err.code, err.message);
+        // Only remove if it's an unregistered/invalid token
+        if (
+          err.code === 'messaging/invalid-argument' ||
+          err.code === 'messaging/registration-token-not-registered'
+        ) {
+          tokensToRemove.push(token);
+        }
+      }
+    }
+
+    // Cleanup invalid tokens
     for (const uid of targetUserIds) {
       const tokens = userTokenMap[uid];
-      const invalidTokens = tokens.filter(t => tokensToRemove.includes(t));
+      const invalidTokens = tokens?.filter(t => tokensToRemove.includes(t)) || [];
       if (invalidTokens.length > 0) {
         await admin.firestore().collection('users').doc(uid).update({
-          fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens)
+          fcmTokens: FieldValue.arrayRemove(...invalidTokens)
         });
       }
     }
 
-    return { result: 'Notifications sent' };
+    return { result: `Notifications sent. Invalid tokens removed: ${tokensToRemove.length}` };
   } catch (err) {
     console.error('Error sending notifications:', err);
-    throw new Error('Internal error');
+    throw new functions.https.HttpsError('internal', 'Failed to send push notifications');
   }
 });
- 
