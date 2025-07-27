@@ -496,6 +496,13 @@ const Financials: React.FC = () => {
                                   <button type="button" className="text-red-500 hover:text-red-700 text-xs ml-2" onClick={async () => {
                                     if (!selectedApartment) return;
                                     setCatLoading(true);
+
+                                    // check if it is any default category
+                                    if (DEFAULT_CATEGORIES.some(c => c.value === cat.value)) {
+                                      toast.error('Cannot delete default category');
+                                      setCatLoading(false);
+                                      return;
+                                    }
                                     // Check if any transactions exist for this category
                                     const txnsSnap = await getDocs(query(
                                       collection(db, 'apartments', selectedApartment, 'expenses'),
@@ -833,7 +840,7 @@ const Financials: React.FC = () => {
                   await Promise.all(selectedFlats.map(flatId => {
                     const flat = flats.find(f => f.id === flatId);
                     // Find the maintenance category id from categories
-                    const maintenanceCat = categories.find(c => c.value === 'maintenance');
+                    const maintenanceCat = categories.find(c => c.value == 'maintenance');
                     return addDoc(collection(db, 'apartments', selectedApartment, 'expenses'), {
                         title: `Maintenance for ${maintMonth} by Flat #${flat ? flat.flatNumber : flatId}`,
                         amount: Number(maintAmount),
