@@ -1,6 +1,8 @@
 import { useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
+import { setupFCM } from './services/fcmClient';
+import { autoEnableFCM } from './services/autoFCM';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
@@ -43,7 +45,10 @@ function App() {
       if (publicRoutes.includes(currentPath)) {
         navigate('/dashboard');
       }
-      // If logged in and on a private route, do nothing
+      // Register FCM for push notifications (manual toggle)
+      setupFCM(user.uid);
+      // Automatically enable notifications after login
+      autoEnableFCM(user.uid);
     }
   }, [user, loading, navigate]);
 

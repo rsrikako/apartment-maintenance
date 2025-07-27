@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import AppIcon from '../components/AppIcon';
 import { useAuth } from '../context/AuthContext';
 import { signOut } from 'firebase/auth';
-import { auth, db } from '../services/firebase';
+import { app, auth, db } from '../services/firebase';
 import { useApartment } from '../context/ApartmentContext';
 import { getDoc, deleteDoc, updateDoc, collection, doc, setDoc, arrayUnion, arrayRemove, getDocs, writeBatch } from 'firebase/firestore';
 
@@ -63,19 +63,35 @@ const Profile: React.FC = () => {
   async function requestNotificationPermission(user: import('firebase/auth').User) {
     setNotificationLoading(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') throw new Error('Permission denied');
+      // Check current permission
+      let permission = Notification.permission;
+      if (permission !== 'granted') {
+        permission = await Notification.requestPermission();
+        if (permission !== 'granted') throw new Error('Permission denied');
+      }
       // Dynamically import messaging
       const { getMessaging, getToken } = await import('firebase/messaging');
-      const messaging = getMessaging();
-      // TODO: Replace with your VAPID key
+      const messaging = getMessaging(app);
       const VAPID_KEY = 'BOopqj_M9KrjnAFztdR99gvKCOa8pv5aGecYYsa5qXnlie8xHNZ8dmfX1M3V_xF0wShHz1lxoIHOFH7zzdq6M70';
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: await navigator.serviceWorker.ready });
-      await updateDoc(doc(db, 'users', user.uid), {
-        fcmTokens: arrayUnion(token),
-        notificationsEnabled: true,
-      });
-      // setFcmToken(token); // removed unused state
+      const swReg = await navigator.serviceWorker.ready;
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+      // Fetch user doc to check existing tokens
+      const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+      let tokens: string[] = [];
+      if (userDocSnap.exists()) {
+        tokens = userDocSnap.data()?.fcmTokens || [];
+      }
+      // Only add if not present
+      if (!tokens.includes(token)) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          fcmTokens: arrayUnion(token),
+          notificationsEnabled: true,
+        });
+      } else {
+        await updateDoc(doc(db, 'users', user.uid), {
+          notificationsEnabled: true,
+        });
+      }
       setNotificationsEnabled(true);
       return token;
     } catch (err) {
