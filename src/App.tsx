@@ -43,12 +43,13 @@ function App() {
     } else {
       // If logged in and on a public route, redirect to /dashboard
       if (publicRoutes.includes(currentPath)) {
+        // Register FCM for push notifications (manual toggle)
+        setupFCM(user.uid);
+        // Automatically enable notifications after login
+        autoEnableFCM(user.uid);
         navigate('/dashboard');
       }
-      // Register FCM for push notifications (manual toggle)
-      setupFCM(user.uid);
-      // Automatically enable notifications after login
-      autoEnableFCM(user.uid);
+    
     }
   }, [user, loading, navigate]);
 
