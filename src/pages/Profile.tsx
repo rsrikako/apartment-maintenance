@@ -72,7 +72,7 @@ const Profile: React.FC = () => {
       // Dynamically import messaging
       const { getMessaging, getToken } = await import('firebase/messaging');
       const messaging = getMessaging(app);
-      const VAPID_KEY = 'BOopqj_M9KrjnAFztdR99gvKCOa8pv5aGecYYsa5qXnlie8xHNZ8dmfX1M3V_xF0wShHz1lxoIHOFH7zzdq6M70';
+      const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
       const swReg = await navigator.serviceWorker.ready;
       const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
       // Fetch user doc to check existing tokens

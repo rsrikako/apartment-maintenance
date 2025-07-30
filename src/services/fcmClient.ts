@@ -20,6 +20,7 @@ export async function setupFCM(userId: string) {
     }
     // Optionally, handle foreground messages
     onMessage(messaging, (payload) => {
+      console.log('Message received. ', payload);
       // You can show a toast or notification here
       // e.g., toast(payload.notification?.title || 'New notification');
       // Or use Notification API
